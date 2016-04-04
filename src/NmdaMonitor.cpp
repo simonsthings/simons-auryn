@@ -25,7 +25,7 @@
 
 #include "NmdaMonitor.h"
 
-NmdaMonitor::NmdaMonitor(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize) : Monitor(filename)
+NmdaMonitor::NmdaMonitor(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize) : TimespanMonitor(filename)
 {
 	init(source,id,filename,stepsize);
 }
@@ -42,12 +42,13 @@ void NmdaMonitor::init(NeuronGroup * source, NeuronID id, string filename, Auryn
 	ssize = stepsize;
 	nid = id;
 
-	outfile << setiosflags(ios::fixed) << setprecision(6);
+	outfile << setiosflags(ios::scientific) << setprecision(6);
 }
 
-void NmdaMonitor::propagate()
+void NmdaMonitor::record_data()
 {
 	if (sys->get_clock()%ssize==0) {
 		outfile << dt*(sys->get_clock()) << " " << src->get_nmda(nid) << "\n";
 	}
 }
+

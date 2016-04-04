@@ -66,6 +66,7 @@
 #include "AIF2Group.h"
 #include "IafPscDeltaGroup.h"
 #include "IFGroup.h"
+#include "IzhikevichGroup.h"
 #include "AIFGroup.h"
 #include "AdExGroup.h"
 #include "CubaIFGroup.h"
@@ -88,9 +89,11 @@
 
 // Monitor and stimulator definitions
 #include "Monitor.h"
+#include "TimespanMonitor.h"
 #include "GabaMonitor.h"
 #include "NmdaMonitor.h"
 #include "AmpaMonitor.h"
+#include "IzhiMonitor.h"
 #include "VoltageMonitor.h"
 #include "SpikeMonitor.h"
 #include "BinarySpikeMonitor.h"

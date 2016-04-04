@@ -28,6 +28,7 @@
 
 #include "auryn_definitions.h"
 #include "Monitor.h"
+#include "TimespanMonitor.h"
 #include "System.h"
 #include "Connection.h"
 #include <fstream>
@@ -36,18 +37,18 @@
 using namespace std;
 
 /*! \brief Records the NMDA conductance from one specific unit from the source group. */
-class NmdaMonitor : protected Monitor
+class NmdaMonitor : public TimespanMonitor
 {
 protected:
 	NeuronGroup * src;
 	NeuronID nid;
 	AurynTime ssize;
 	void init(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize);
+	virtual void record_data();
 	
 public:
 	NmdaMonitor(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize=1);
 	virtual ~NmdaMonitor();
-	void propagate();
 };
 
 #endif /*NMDAMONITOR_H_*/

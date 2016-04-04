@@ -25,7 +25,7 @@
 
 #include "VoltageMonitor.h"
 
-VoltageMonitor::VoltageMonitor(NeuronGroup * source, NeuronID id, string filename, AurynDouble stepsize) : Monitor(filename)
+VoltageMonitor::VoltageMonitor(NeuronGroup * source, NeuronID id, string filename, AurynDouble stepsize) : TimespanMonitor(filename)
 {
 	init(source,id,filename,(AurynTime)(stepsize/dt));
 }
@@ -45,18 +45,17 @@ void VoltageMonitor::init(NeuronGroup * source, NeuronID id, string filename, Au
 	gid = src->rank2global(nid);
 	paste_spikes = true;
 
-	tStop = -1; // at the end of all times ...
-
 	if ( nid < src->get_post_size() ) {
 		sys->register_monitor(this);
-		outfile << setiosflags(ios::fixed) << setprecision(6);
+		outfile << setiosflags(ios::scientific) << setprecision(6);
 		outfile << "# Recording from neuron " << gid << "\n";
 	}
 }
 
-void VoltageMonitor::propagate()
+void VoltageMonitor::record_data()
 {
-	if ( sys->get_clock() < tStop && (sys->get_clock())%ssize==0 ) {
+	if (sys->get_clock()%ssize==0)
+	{
 		double voltage = src->get_mem(nid);
 		if ( paste_spikes ) {
 			SpikeContainer * spikes = src->get_spikes_immediate();
@@ -83,5 +82,15 @@ void VoltageMonitor::set_stop_time(AurynDouble time)
 	if (time < 0) {
 		logger->msg("Warning: Negative stop times not supported -- ingoring.",WARNING);
 	} 
-	else tStop = sys->get_clock() + time/dt;
+	else
+	{
+		// create temporary auryn_vector_floats because that is what set_recording_times expects. Maybe just start using vectors here anyway!
+		auryn_vector_float* starttimes_temp = auryn_vector_float_alloc(1);
+		auryn_vector_float* stoptimes_temp  = auryn_vector_float_alloc(1);
+		starttimes_temp->data[0] = sys->get_time();
+		stoptimes_temp->data[0]  = sys->get_time() + time;
+		set_recording_times(starttimes_temp,stoptimes_temp);
+		auryn_vector_float_free(starttimes_temp);
+		auryn_vector_float_free(stoptimes_temp);
+	}
 }

@@ -23,33 +23,32 @@
 * Front Neuroinform 8, 76. doi: 10.3389/fninf.2014.00076
 */
 
-#include "AmpaMonitor.h"
+#ifndef IZHIMONITOR_H_
+#define IZHIMONITOR_H_
 
-AmpaMonitor::AmpaMonitor(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize) : TimespanMonitor(filename)
+#include "auryn_definitions.h"
+#include "TimespanMonitor.h"
+#include "Monitor.h"
+#include "System.h"
+#include "Connection.h"
+#include <fstream>
+#include <iomanip>
+#include "IzhikevichGroup.h"
+
+using namespace std;
+
+/*! \brief Records the AMPA conductance from one specific unit from the source group. */
+class IzhiMonitor : public TimespanMonitor
 {
-	init(source,id,filename,stepsize);
-}
+protected:
+	IzhikevichGroup * src;
+	NeuronID nid;
+	AurynTime ssize;
+	void record_data();
+	void init(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize);
+public:
+	IzhiMonitor(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize=1);
+	virtual ~IzhiMonitor();
+};
 
-AmpaMonitor::~AmpaMonitor()
-{
-}
-
-void AmpaMonitor::init(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize)
-{
-	sys->register_monitor(this);
-
-	src = source;
-	ssize = stepsize;
-	if ( ssize < 1 ) ssize = 1;
-
-	nid = id;
-	outfile << setiosflags(ios::scientific) << setprecision(6);
-}
-
-void AmpaMonitor::record_data()
-{
-	if (sys->get_clock()%ssize==0)
-	{
-		outfile << dt*(sys->get_clock()) << " " << src->get_ampa(nid) << "\n";
-	}
-}
+#endif /*IZHIMONITOR_H_*/

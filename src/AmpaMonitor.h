@@ -27,6 +27,7 @@
 #define AMPAMONITOR_H_
 
 #include "auryn_definitions.h"
+#include "TimespanMonitor.h"
 #include "Monitor.h"
 #include "System.h"
 #include "Connection.h"
@@ -36,18 +37,18 @@
 using namespace std;
 
 /*! \brief Records the AMPA conductance from one specific unit from the source group. */
-class AmpaMonitor : protected Monitor
+class AmpaMonitor : public TimespanMonitor
 {
 protected:
 	NeuronGroup * src;
 	NeuronID nid;
 	AurynTime ssize;
+	void record_data();
 	void init(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize);
 	
 public:
 	AmpaMonitor(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize=1);
 	virtual ~AmpaMonitor();
-	void propagate();
 };
 
 #endif /*AMPAMONITOR_H_*/

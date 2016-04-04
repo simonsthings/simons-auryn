@@ -26,19 +26,19 @@
 #include "SpikeMonitor.h"
 
 SpikeMonitor::SpikeMonitor(SpikingGroup * source, string filename, NeuronID from, NeuronID to) 
-	: Monitor(filename)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,from,to);
 }
 
 SpikeMonitor::SpikeMonitor(SpikingGroup * source, string filename, NeuronID to)
-	: Monitor(filename)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,0,to);
 }
 
 SpikeMonitor::SpikeMonitor(SpikingGroup * source, string filename)
-	: Monitor(filename)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,0,source->get_size());
 }
@@ -72,7 +72,7 @@ void SpikeMonitor::set_every(NeuronID every)
 	n_every = every;
 }
 
-void SpikeMonitor::propagate()
+void SpikeMonitor::record_data()
 {
 	if ( !active ) return;
 

@@ -36,3 +36,9 @@ TARGET_LINK_LIBRARIES( sim_poisson auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
 
 ADD_EXECUTABLE( sim_coba_binmon sim_coba_binmon.cpp )
 TARGET_LINK_LIBRARIES( sim_coba_binmon auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
+
+ADD_EXECUTABLE( sim_simon1 sim_simon1.cpp )
+TARGET_LINK_LIBRARIES( sim_simon1 auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
+
+ADD_EXECUTABLE( sim_simon2 sim_simon2.cpp )
+TARGET_LINK_LIBRARIES( sim_simon2 auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
