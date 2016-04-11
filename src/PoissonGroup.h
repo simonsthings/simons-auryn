@@ -63,6 +63,7 @@ private:
 
 protected:
 	NeuronID x;
+	virtual void distribute_spike(NeuronID theSpikingNeuron); ///< Allow the distribution target to be overwritten by sub-classes.
 	
 public:
 	/*! Standard constructor. 

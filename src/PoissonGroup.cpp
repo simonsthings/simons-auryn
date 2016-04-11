@@ -78,11 +78,15 @@ AurynDouble  PoissonGroup::get_rate()
 	return lambda;
 }
 
+void PoissonGroup::distribute_spike(NeuronID theSpikingNeuron)
+{
+	push_spike ( theSpikingNeuron );
+}
 
 void PoissonGroup::evolve()
 {
 	while ( x < get_rank_size() ) {
-		push_spike ( x );
+		distribute_spike ( x );
 		AurynDouble r = -log((*die)()+1e-128)/lambda;
 		// we add 1.5: one to avoid two spikes per bin and 0.5 to 
 		// compensate for rounding effects from casting

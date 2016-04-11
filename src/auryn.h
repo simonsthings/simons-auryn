@@ -74,6 +74,7 @@
 #include "SpikingGroup.h"
 #include "NeuronGroup.h"
 #include "PoissonGroup.h"
+#include "PolychronousPoissonGroup.h"
 #include "ProfilePoissonGroup.h"
 #include "StructuredPoissonGroup.h"
 #include "CorrelatedPoissonGroup.h"
