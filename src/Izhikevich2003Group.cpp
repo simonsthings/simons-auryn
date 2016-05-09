@@ -23,23 +23,23 @@
 * Front Neuroinform 8, 76. doi: 10.3389/fninf.2014.00076
 */
 
-#include "IzhikevichGroup.h"
+#include <Izhikevich2003Group.h>
 
 
-IzhikevichGroup::IzhikevichGroup( NeuronID size, AurynFloat load, NeuronID total ) : NeuronGroup(size,load,total)
+Izhikevich2003Group::Izhikevich2003Group( NeuronID size, AurynFloat load, NeuronID total ) : NeuronGroup(size,load,total)
 {
 	sys->register_spiking_group(this);
 	if ( evolve_locally() ) init();
 }
 
-void IzhikevichGroup::calculate_scale_constants()
+void Izhikevich2003Group::calculate_scale_constants()
 {
 	scale_ampa =  exp(-dt/tau_ampa) ;
 	scale_gaba =  exp(-dt/tau_gaba) ;
 	scale_thr = exp(-dt/tau_thr) ;
 }
 
-void IzhikevichGroup::init()
+void Izhikevich2003Group::init()
 {
 	// BEGIN old stuff
 	//e_rest = -70e-3;
@@ -76,7 +76,7 @@ void IzhikevichGroup::init()
 	inputCurrents =  get_state_vector("inputCurrents");
 	backgroundCurrents = get_state_vector("backgroundCurrents");
 	consistent_integration = true;
-	use_recovery = false;
+	use_recovery = true;
 	e_rest = c*mV;//*1e-3;  // mV. Not sure about scaling here, though.
 	e_reset = c*mV;//*1e-3; // mV. Not sure about scaling here, though.
 	doProperChannelStuff = false;   // for debugging.
@@ -105,7 +105,7 @@ void IzhikevichGroup::init()
 	clear();
 }
 
-void IzhikevichGroup::clear()
+void Izhikevich2003Group::clear()
 {
 	clear_spikes();
 	for (NeuronID i = 0; i < get_rank_size(); ++i) {
@@ -122,15 +122,15 @@ void IzhikevichGroup::clear()
 	}
 }
 
-void IzhikevichGroup::free() {
+void Izhikevich2003Group::free() {
 }
 
-IzhikevichGroup::~IzhikevichGroup()
+Izhikevich2003Group::~Izhikevich2003Group()
 {
 	if ( evolve_locally() ) free();
 }
 
-void IzhikevichGroup::integrate_linear_nmda_synapses()
+void Izhikevich2003Group::integrate_linear_nmda_synapses()
 {
 	// decay of ampa and gaba channel, i.e. multiply by exp(-dt/tau)
     auryn_vector_float_scale(scale_ampa,g_ampa);
@@ -157,7 +157,7 @@ void IzhikevichGroup::integrate_linear_nmda_synapses()
 /*!
        This method applies the Euler integration step to the membrane dynamics.
  */
-void IzhikevichGroup::integrate_membrane_debug()
+void Izhikevich2003Group::integrate_membrane_debug()
 {
 	//AurynFloat projMult = 2000;  // the projection multiplier as used in my matlab code. get rid of this at some point!
 
@@ -172,15 +172,23 @@ void IzhikevichGroup::integrate_membrane_debug()
 	AurynFloat I_scale;
 	if (doProperChannelStuff)
 	{
-		//AurynFloat I_scale = 500; // dt = 1 ms,   Indirect. Works! (quite fine: some ghosts, but tuning to early spikes remains stable here! Ratemax=1000, rateZero=10s)
-		//AurynFloat I_scale = 50;  // dt = 0.1 ms. Indirect. Works! (quite broad set of strong weights, but ok. Also, some ghost may be starting to materialise into a second peak.)
-		I_scale = 50; // Indirect
+		if (dt == 1.0e-3)
+			I_scale = 500; // dt = 1 ms,   Indirect. Works! (quite fine: some ghosts, but tuning to early spikes remains stable here! Ratemax=1000, rateZero=10s)
+		else if (dt == 1.0e-4)
+			//AurynFloat I_scale = 50;  // dt = 0.1 ms. Indirect. Works! (quite broad set of strong weights, but ok. Also, some ghost may be starting to materialise into a second peak.)
+			I_scale = 50; // Indirect
+		else
+			cout << "Error error error error (doProperChannelStuff=true): dt=" << dt << endl;
 	}
 	else
 	{
-		//AurynFloat I_scale = 2;   // dt = 1 ms    Direct.   Works! (well, repeated learning, but its something! Ratemax=500, rateZero=11-12s)
-		//AurynFloat I_scale = 20;  // dt = 0.1 ms. Direct.   Works! (stable red first 50 inputs, then darkblue for another 250 inputs. Then random-looking! :-o)
-		I_scale = 20; // Direct
+		if (dt == 1.0e-3)
+			I_scale = 2;   // dt = 1 ms    Direct.   Works! (well, repeated learning, but its something! Ratemax=500, rateZero=11-12s)
+		else if (dt == 1.0e-4)
+			//AurynFloat I_scale = 20;  // dt = 0.1 ms. Direct.   Works! (stable red first 50 inputs, then darkblue for another 250 inputs. Then random-looking! :-o)
+			I_scale = 20; // Direct
+		else
+			cout << "Error error error error (doProperChannelStuff=false): dt=" << dt << endl;
 	}
 
 	consistent_integration = true;
@@ -198,6 +206,11 @@ void IzhikevichGroup::integrate_membrane_debug()
 		mem->data[0] += 0.5*h * (0.04*V*V/mV + 5.0*V + 140*mV - U) + 0.5*I_syn*I_scale;
 	}
 
+	if (use_recovery)
+	{
+		u->data[0] += h * a * (b * V - U);
+	}
+
 	tempMemStates[0] = h;
 	tempMemStates[1] = V;
 	tempMemStates[2] = U;
@@ -205,7 +218,7 @@ void IzhikevichGroup::integrate_membrane_debug()
 	tempMemStates[4] = mem->data[0];
 
 }
-void IzhikevichGroup::integrate_membrane()
+void Izhikevich2003Group::integrate_membrane()
 {
 	// use standard forward Euler numerics in this case
 	if (consistent_integration)
@@ -326,7 +339,7 @@ void IzhikevichGroup::integrate_membrane()
 //    auryn_vector_float_saxpy(-mul_tau_mem,t_leak,mem);
 //}
 
-void IzhikevichGroup::check_peaks()
+void Izhikevich2003Group::check_peaks()
 {
 	for ( AurynState * i = mem->data ; i != mem->data+get_rank_size() ; ++i ) { // it's important to use rank_size here otherwise there might be spikes from units that do not exist
     	if ( *i > V_peak ) {
@@ -340,7 +353,7 @@ void IzhikevichGroup::check_peaks()
 
 }
 
-void IzhikevichGroup::evolve()
+void Izhikevich2003Group::evolve()
 {
 	check_peaks(); // moved to front of function, so that the monitors can actually track the above-peak membrane potentials!
 
@@ -359,83 +372,83 @@ void IzhikevichGroup::evolve()
 }
 
 
-void IzhikevichGroup::set_tau_mem(AurynFloat taum)
+void Izhikevich2003Group::set_tau_mem(AurynFloat taum)
 {
 	tau_mem = taum;
 	calculate_scale_constants();
 }
 
-AurynFloat IzhikevichGroup::get_tau_mem()
+AurynFloat Izhikevich2003Group::get_tau_mem()
 {
 	return tau_mem;
 }
 
-void IzhikevichGroup::set_tau_ampa(AurynFloat taum)
+void Izhikevich2003Group::set_tau_ampa(AurynFloat taum)
 {
 	tau_ampa = taum;
 	calculate_scale_constants();
 }
 
-AurynFloat IzhikevichGroup::get_tau_ampa()
+AurynFloat Izhikevich2003Group::get_tau_ampa()
 {
 	return tau_ampa;
 }
 
-void IzhikevichGroup::set_tau_gaba(AurynFloat taum)
+void Izhikevich2003Group::set_tau_gaba(AurynFloat taum)
 {
 	tau_gaba = taum;
 	calculate_scale_constants();
 }
 
-AurynFloat IzhikevichGroup::get_tau_gaba()
+AurynFloat Izhikevich2003Group::get_tau_gaba()
 {
 	return tau_gaba;
 }
 
-void IzhikevichGroup::set_tau_nmda(AurynFloat taum)
+void Izhikevich2003Group::set_tau_nmda(AurynFloat taum)
 {
 	tau_nmda = taum;
 	calculate_scale_constants();
 }
 
-AurynFloat IzhikevichGroup::get_tau_nmda()
+AurynFloat Izhikevich2003Group::get_tau_nmda()
 {
 	return tau_nmda;
 }
 
-void IzhikevichGroup::set_ampa_nmda_ratio(AurynFloat ratio)
+void Izhikevich2003Group::set_ampa_nmda_ratio(AurynFloat ratio)
 {
  	A_ampa = ratio/(ratio+1.0);
 	A_nmda = 1./(ratio+1.0);
 }
 
 
-AurynState IzhikevichGroup::get_t_exc(NeuronID i)
+AurynState Izhikevich2003Group::get_t_exc(NeuronID i)
 {
 	return get_val(t_exc,i);
 }
 
-AurynState IzhikevichGroup::get_t_inh(NeuronID i)
+AurynState Izhikevich2003Group::get_t_inh(NeuronID i)
 {
 	return get_val(t_inh,i);
 }
 
-AurynState IzhikevichGroup::get_v_temp(NeuronID i)
+AurynState Izhikevich2003Group::get_v_temp(NeuronID i)
 {
 	return get_val(v_temp,i);
 }
 
-AurynState IzhikevichGroup::get_u_temp(NeuronID i)
+AurynState Izhikevich2003Group::get_u_temp(NeuronID i)
 {
 	return get_val(u_temp,i);
 }
 
-AurynState IzhikevichGroup::get_u(NeuronID i)
+AurynState Izhikevich2003Group::get_u(NeuronID i)
 {
 	return get_val(u,i);
 }
 
-AurynState IzhikevichGroup::get_tempMemState(int i)
+AurynState Izhikevich2003Group::get_tempMemState(int i)
 {
 	return (AurynState)tempMemStates[i];
 }

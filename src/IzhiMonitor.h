@@ -26,6 +26,7 @@
 #ifndef IZHIMONITOR_H_
 #define IZHIMONITOR_H_
 
+#include <Izhikevich2003Group.h>
 #include "auryn_definitions.h"
 #include "TimespanMonitor.h"
 #include "Monitor.h"
@@ -33,7 +34,6 @@
 #include "Connection.h"
 #include <fstream>
 #include <iomanip>
-#include "IzhikevichGroup.h"
 
 using namespace std;
 
@@ -41,13 +41,13 @@ using namespace std;
 class IzhiMonitor : public TimespanMonitor
 {
 protected:
-	IzhikevichGroup * src;
+	Izhikevich2003Group * src;
 	NeuronID nid;
 	AurynTime ssize;
 	void record_data();
-	void init(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize);
+	void init(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize);
 public:
-	IzhiMonitor(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize=1);
+	IzhiMonitor(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize=1);
 	virtual ~IzhiMonitor();
 };
 

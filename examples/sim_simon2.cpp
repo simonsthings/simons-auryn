@@ -216,7 +216,7 @@ int main(int ac, char* av[])
 
 	NeuronID N_post = simparams.get<int>("neurongroups.outputs.N");
 
-	IzhikevichGroup* detector_neuron = new IzhikevichGroup(N_post);
+	Izhikevich2003Group* detector_neuron = new Izhikevich2003Group(N_post);
 	cout << "IzhikevichGroup.ampa: " << detector_neuron->get_ampa(0) << endl;
 
 

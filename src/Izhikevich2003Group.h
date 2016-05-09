@@ -23,8 +23,8 @@
 * Front Neuroinform 8, 76. doi: 10.3389/fninf.2014.00076
 */
 
-#ifndef IZHIGROUP_H_
-#define IZHIGROUP_H_
+#ifndef IZHI2003GROUP_H_
+#define IZHI2003GROUP_H_
 
 #include "auryn_definitions.h"
 #include "NeuronGroup.h"
@@ -42,7 +42,7 @@
  * ajusted via set_ampa_nmda_ratio. The voltage dependence of NMDA is 
  * ignored in this model.
  */
-class IzhikevichGroup : public NeuronGroup
+class Izhikevich2003Group : public NeuronGroup
 {
 private:
 	auryn_vector_float * t_leak;
@@ -97,8 +97,8 @@ public:
 	 * in this simulation. This is also part of the exerimental load balancing
 	 * mechanism.
 	 */
-	IzhikevichGroup( NeuronID size, AurynFloat load = 1.0, NeuronID total = 0 );
-	virtual ~IzhikevichGroup();
+	Izhikevich2003Group( NeuronID size, AurynFloat load = 1.0, NeuronID total = 0 );
+	virtual ~Izhikevich2003Group();
 	/*! Sets the membrane time constant */
 	void set_tau_mem(AurynFloat taum);
 	/*! Returns the membrane time constant */
@@ -140,5 +140,5 @@ public:
 
 };
 
-#endif /*IZHIGROUP_H_*/
+#endif /*IZHI2003GROUP_H_*/
 

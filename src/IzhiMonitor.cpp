@@ -25,7 +25,7 @@
 
 #include "IzhiMonitor.h"
 
-IzhiMonitor::IzhiMonitor(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize) : TimespanMonitor(filename)
+IzhiMonitor::IzhiMonitor(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize) : TimespanMonitor(filename)
 {
 	init(source,id,filename,stepsize);
 }
@@ -34,7 +34,7 @@ IzhiMonitor::~IzhiMonitor()
 {
 }
 
-void IzhiMonitor::init(IzhikevichGroup * source, NeuronID id, string filename, AurynTime stepsize)
+void IzhiMonitor::init(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize)
 {
 	sys->register_monitor(this);
 

@@ -42,3 +42,9 @@ TARGET_LINK_LIBRARIES( sim_simon1 auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
 
 ADD_EXECUTABLE( sim_simon2 sim_simon2.cpp )
 TARGET_LINK_LIBRARIES( sim_simon2 auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
+
+ADD_EXECUTABLE( test_Izhikevich2003Group test_Izhikevich2003Group.cpp )
+TARGET_LINK_LIBRARIES( test_Izhikevich2003Group auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
+
+ADD_EXECUTABLE( test_Izhikevich2007Group test_Izhikevich2007Group.cpp )
+TARGET_LINK_LIBRARIES( test_Izhikevich2007Group auryn ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} )
