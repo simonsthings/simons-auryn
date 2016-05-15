@@ -143,7 +143,7 @@ int main(int ac, char* av[])
 			errcode = 2;
 
 
-	double stepcurrent = 2000.0/dt;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	double stepcurrent = 700.0 * 1e3;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
 	theInjector->set_current(0,stepcurrent);
 
 
