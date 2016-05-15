@@ -40,7 +40,10 @@ int main(int ac, char* av[])
 	NeuronID seed = 1;
 	double kappa = 5.;
 	double simtime = 0.9;  // in seconds
-	double steptimepoint = 0.1;  // in seconds
+	double stepAt = 0.1;  // in seconds
+
+	if (stepAt >= simtime)
+		throw logic_error("the step time must be within the sim time!!");
 
 	int errcode = 0;
 
@@ -134,7 +137,7 @@ int main(int ac, char* av[])
 	SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras", size);
 
 	///< simulate until the current step:
-	if (!sys->run(steptimepoint,false))
+	if (!sys->run(stepAt,false))
 			errcode = 2;
 
 
@@ -143,7 +146,7 @@ int main(int ac, char* av[])
 
 
 	///< sim until the end:
-	if (!sys->run(simtime-steptimepoint,false))
+	if (!sys->run(simtime-stepAt,false))
 			errcode = 1;
 
 	logger->msg("Freeing ...",PROGRESS,true);

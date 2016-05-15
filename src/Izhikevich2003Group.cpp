@@ -429,7 +429,7 @@ void Izhikevich2003Group::evolve()
 	integrate_membrane_debug_two();
 
 	// TODO: reactivate this?
-	//auryn_vector_float_set_zero(t_exc);
+	auryn_vector_float_set_zero(t_exc);
 }
 
 

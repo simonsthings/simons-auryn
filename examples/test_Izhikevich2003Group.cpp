@@ -39,8 +39,11 @@ int main(int ac, char* av[])
 	NeuronID size = 1000;
 	NeuronID seed = 1;
 	double kappa = 5.;
-	double simtime = 0.9;  // in seconds
-	double steptimepoint = 9.09;  // in seconds
+	double simtime = 9.0;  // in seconds
+	double stepAt  = 0.9;  // in seconds
+
+	if (stepAt >= simtime)
+		throw logic_error("the step time must be within the sim time!!");
 
 	int errcode = 0;
 
@@ -125,27 +128,27 @@ int main(int ac, char* av[])
 
 	NeuronID N_post = 1;
 	Izhikevich2003Group* izhi_neuron = new Izhikevich2003Group(N_post);
+	//CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"mem");
+	CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
+	theInjector->set_current(0,0.0);  // start with no added current
+
 
 	VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem");
 	StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"u", "test_Izhi.u");
 	StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"t_exc", "test_Izhi.t_exc");
 	SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras", size);
 
-	//CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"mem");
-	CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
-	theInjector->set_current(0,0.0);  // start with no added current
-
 	///< simulate until the current step:
-	if (!sys->run(steptimepoint,false))
+	if (!sys->run(stepAt,false))
 			errcode = 2;
 
 
-	double stepcurrent = 2000.0;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	double stepcurrent = 2000.0/dt;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
 	theInjector->set_current(0,stepcurrent);
 
 
 	///< sim until the end:
-	if (!sys->run(simtime-steptimepoint,false))
+	if (!sys->run(simtime-stepAt,false))
 			errcode = 1;
 
 	logger->msg("Freeing ...",PROGRESS,true);
