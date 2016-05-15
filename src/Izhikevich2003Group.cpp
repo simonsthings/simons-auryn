@@ -34,25 +34,11 @@ Izhikevich2003Group::Izhikevich2003Group( NeuronID size, AurynFloat load, Neuron
 
 void Izhikevich2003Group::calculate_scale_constants()
 {
-	scale_ampa =  exp(-dt/tau_ampa) ;
-	scale_gaba =  exp(-dt/tau_gaba) ;
-	scale_thr = exp(-dt/tau_thr) ;
 }
 
 void Izhikevich2003Group::init()
 {
 	// BEGIN old stuff
-	//e_rest = -70e-3;
-	//e_reset = -70e-3;
-	e_rev = -80e-3;
-	thr_rest = -50e-3;
-	dthr = 100e-3;
-	tau_thr = 5e-3;
-	tau_mem = 20e-3;
-	tau_ampa = 1e-3;  // 5 ms
-	tau_gaba = 10e-3;
-	tau_nmda = 100e-3;
-	set_ampa_nmda_ratio(1.0);
 	calculate_scale_constants();
 	t_leak = get_state_vector("t_leak");
 	t_exc =  get_state_vector("t_exc");
@@ -60,97 +46,191 @@ void Izhikevich2003Group::init()
 	// END old stuff
 	
 	// new stuff!
-	mV = 1e-3;  // needed because Izhikevich neuron is originally defined in millivolts, not volts.
-	ms = 1e-3;  // needed to allow for different integration time steps than 1 millisecond.
-	a = 0.02;
-	b = 0.2;
-	c = -65;
-	d = 2;
+
 	//v = get_state_vector("v");  // using mem instead!
 	u = get_state_vector("u");
 	v_temp = get_state_vector("v_temp");
 	v_temp2 = get_state_vector("v_temp2");
 	u_temp = get_state_vector("u_temp");
-	V_peak = 30*mV;
-	V_min = -150; // -150 Volts. This is just a safeguard. TODO: Output warning if this is reached!
 	inputCurrents =  get_state_vector("inputCurrents");
 	backgroundCurrents = get_state_vector("backgroundCurrents");
 	consistent_integration = true;
-	use_recovery = true;
-	e_rest = c*mV;//*1e-3;  // mV. Not sure about scaling here, though.
-	e_reset = c*mV;//*1e-3; // mV. Not sure about scaling here, though.
-	doProperChannelStuff = false;   // for debugging.
+	use_recovery = false;
 
-	// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
-	C = 1;
-	k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-	v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-	v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+	select_example_parameter_set(Izhikevich_DefaultParametersets::default_2003);
+	cout << "The Izhikevich coefficients are now: ";
+	cout << " a2 = " << mem_coeffs[2];
+	cout << ", a1 = " << mem_coeffs[1];
+	cout << ", a0 = " << mem_coeffs[0] << endl;
 
-	if (false)
-	{
-		// To allow RS neuron of p. 274 of Izhikevich book, use these params:
-		C = 100;  // pF
-		k = 0.7;                // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_rest  = -60;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_thres = -40;//*mV;  // instantaneous threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		a = 0.03;
-		b = -2;
-		c = -50; // mV
-		d = 100;
-		V_peak = 35; //mV;
-		// I_syn = 70; // pA
-	}
+	/** Begin set up Handles **/
+    handle_mem = auryn_vector_float_ptr ( mem , 0 );
+    handle_u = auryn_vector_float_ptr ( u , 0 );
+    handle_u_temp = auryn_vector_float_ptr ( u_temp , 0 );
+    handle_e_input = auryn_vector_float_ptr ( t_exc , 0 );
+    /** End set up Handles **/
+
+    // scale constants to keep time and other units SI-conform:
+	scale_mem = dt/ms /(C/pF) * mV;
+	scale_u = dt/ms *mV;
 
 	clear();
 }
 
+void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParametersets paramsetchoice)
+{
+	//AurynDouble k,v_rest,v_thres;
+	V_min = -150; // -150 Volts. This is just a safeguard. TODO: Output warning if this is reached!
+
+	switch (paramsetchoice)
+	{
+	case Izhikevich_DefaultParametersets::default_2003:
+		a = 0.02;
+		b = 0.2;
+		c = -65; // mV, but don't use SI for now.
+		d = 2;
+		V_peak = 30;//*mV;
+		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
+		C = 1;
+		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		//v_thres = 82.6556*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		//v_rest  = 42.3444*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		// FIXME: not sure if the fit really is correct as v_rest and v_thres need to be positive for the coeffs to be computed correctly!
+		V_reset = c;
+		mem_coeffs[0] = 140;
+		mem_coeffs[1] = 5;
+		mem_coeffs[2] = 0.04 ;
+		u_coeffs[0] = 0;
+		u_coeffs[1] = b;
+		break;
+	case Izhikevich_DefaultParametersets::fitted_2003:
+		a = 0.02;
+		b = 0.2;
+		c = -65;
+		d = 2;
+		V_peak = 30*mV;
+		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
+		C = 1;
+		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
+		//v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		//v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = 42.3444*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = 82.6556*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		// FIXME: not sure if the fit really is correct as v_rest and v_thres need to be positive for the coeffs to be computed correctly!
+		calculate_Izhikevich_coefficients(k,v_rest,v_thres,b);
+		break;
+	case Izhikevich_DefaultParametersets::A_2004:
+		// To allow RS neuron of p. 274 of Izhikevich book, use these params:
+		a = 0.03;
+		b = -2;
+		c = -50; // mV
+		d = 100;
+		V_peak = 35*mV;
+		C = 100;  // pF
+		k = 0.7;                // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -60*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -40*mV;  // instantaneous threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		// I_syn = 70; // pA
+		calculate_Izhikevich_coefficients(k,v_rest,v_thres,b);
+		break;
+	default:
+		throw std::logic_error("Unhandled switch case!");
+	}
+
+}
+void Izhikevich2003Group::calculate_Izhikevich_coefficients(AurynDouble k, AurynDouble v_rest, AurynDouble v_thres, AurynDouble b)
+{
+	mem_coeffs[0] = k * v_rest * v_thres;
+	mem_coeffs[1] = k * (v_rest + v_thres);
+	mem_coeffs[2] = k ;
+
+	u_coeffs[0] = b*v_rest;
+	u_coeffs[1] = b;
+
+	V_reset = c*mV;
+}
 void Izhikevich2003Group::clear()
 {
 	clear_spikes();
-	for (NeuronID i = 0; i < get_rank_size(); ++i) {
-	   //auryn_vector_float_set (mem, i, e_rest);
-	   auryn_vector_float_set (mem, i, c*mV);
-	   auryn_vector_float_set (thr, i, 0.);
-	   auryn_vector_float_set (g_ampa, i, 0.);
-	   auryn_vector_float_set (g_gaba, i, 0.);
-	   auryn_vector_float_set (g_nmda, i, 0.);
 
-	   auryn_vector_float_set (u, i, 0.2*e_rest);
-	   auryn_vector_float_set (inputCurrents, i, 0.);
-	   auryn_vector_float_set (backgroundCurrents, i, 0.);
-	}
+	//auryn_vector_float_set (mem, i, e_rest);
+	auryn_vector_float_set_all(mem, V_reset);
+	auryn_vector_float_set_all (thr, 0.);
+	auryn_vector_float_set_all (g_ampa, 0.);
+	auryn_vector_float_set_all (g_gaba, 0.);
+	auryn_vector_float_set_all (g_nmda, 0.);
+
+	auryn_vector_float_set_all (u, b*c);
+	auryn_vector_float_set_all (inputCurrents, 0.);
+	auryn_vector_float_set_all (backgroundCurrents, 0.);
 }
-
-void Izhikevich2003Group::free() {
+void Izhikevich2003Group::free()
+{
 }
-
 Izhikevich2003Group::~Izhikevich2003Group()
 {
 	if ( evolve_locally() ) free();
 }
-
-void Izhikevich2003Group::integrate_linear_nmda_synapses()
+void Izhikevich2003Group::integrate_membrane_debug_two()
 {
-	// decay of ampa and gaba channel, i.e. multiply by exp(-dt/tau)
-    auryn_vector_float_scale(scale_ampa,g_ampa);
-    auryn_vector_float_scale(scale_gaba,g_gaba);
+	AurynFloat* handle_inputcurrent = auryn_vector_float_ptr ( t_exc , 0 );
 
-    // compute dg_nmda = (g_ampa-g_nmda)*dt/tau_nmda and add to g_nmda
-	AurynFloat mul_nmda = dt/tau_nmda;
-    auryn_vector_float_saxpy(mul_nmda,g_ampa,g_nmda);
-	auryn_vector_float_saxpy(-mul_nmda,g_nmda,g_nmda);
+	if (use_recovery)
+	{
+		// will refer to this later via handle_u_temp:
+		auryn_vector_float_copy(u,u_temp);
+	}
 
-    // excitatory
-    auryn_vector_float_copy(g_ampa,t_exc);
-    auryn_vector_float_scale(-A_ampa,t_exc);
-    auryn_vector_float_saxpy(-A_nmda,g_nmda,t_exc);
-    auryn_vector_float_mul(t_exc,mem);
-    
-    // inhibitory
-    auryn_vector_float_copy(mem,t_inh);
-    auryn_vector_float_add_constant(t_inh,-e_rev);
-    auryn_vector_float_mul(t_inh,g_gaba);
+    // TODO we should vectorize this code and use some fast SSE
+    // library such as http://gruntthepeon.free.fr/ssemath/
+    // for the exponential
+    for (NeuronID n = 0 ; n < get_rank_size() ; ++n )
+    {
+		if (use_recovery)
+		{
+			/*
+			cout << setiosflags(ios::fixed) << setprecision(6);
+			cout << "mem: " << (handle_mem[n])*1e3 << endl;
+			cout << " u : " << (handle_u[n])*1e3 << endl;
+			cout << "inputcurrent: " << (handle_inputcurrent[n])*1e3 << endl;
+			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*1e3 << endl;
+			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*1e3 << endl << endl;
+			*/
+
+			handle_u[n] += dt/ms * a * ( b * (handle_mem[n]-v_rest)/mV - handle_u[n] );
+			handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u_temp[n] + handle_inputcurrent[n] ) ;
+		}
+		else
+		{
+
+			//double tempscaler = 1e3;
+			double tempscaler = 1;
+			cout << setiosflags(ios::fixed) << setprecision(6);
+			cout << "mem: " << (handle_mem[n])*tempscaler << endl;
+			cout << "inputcurrent: " << (handle_inputcurrent[n])*tempscaler << endl;
+			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*tempscaler << endl;
+			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*tempscaler << endl << endl;
+
+
+			// uses handle_u directly, instead of the copied handle_u_temp:
+			//handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u[n] + 0 ) ;
+			//handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u[n] + handle_inputcurrent[n] ) ;
+		//handle_mem[n] += mV * dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n]/mV/mV + mem_coeffs[1] * handle_mem[n]/mV + mem_coeffs[0]  -  -13 + handle_inputcurrent[n] ) ;
+			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + 0 ) ;
+			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + handle_inputcurrent[n] ) ;
+
+			handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - 0.0  + 000.0 + handle_inputcurrent[n]  ) ;
+			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  0 + 20 ) ;
+		}
+    }
+
+
+	// clip lower bound of membrane potential to account for bad (initial) conditions:
+	//auryn_vector_float_clip( mem, V_min );
+	tempMemStates[12] = handle_mem[0];
+
 }
 
 /// Integrate the internal state
@@ -170,7 +250,7 @@ void Izhikevich2003Group::integrate_membrane_debug()
 	//AurynFloat I_scale = 0.005;   // still with dt = 0.1 ms, outside of bracket?
 
 	AurynFloat I_scale;
-	if (doProperChannelStuff)
+	if (false)  // doProperChannelStuff
 	{
 		if (dt == 1.0e-3)
 			I_scale = 500; // dt = 1 ms,   Indirect. Works! (quite fine: some ghosts, but tuning to early spikes remains stable here! Ratemax=1000, rateZero=10s)
@@ -323,29 +403,13 @@ void Izhikevich2003Group::integrate_membrane()
 	tempMemStates[12] = mem->data[0];
 }
 
-//void IzhikevichGroup::integrate_membrane_IFNeuron()
-//{
-//	// moving threshold
-//    auryn_vector_float_scale(scale_thr,thr);
-//
-//    // leak
-//	auryn_vector_float_copy(mem,t_leak);
-//    auryn_vector_float_add_constant(t_leak,-e_rest);
-//
-//    // membrane dynamics
-//	AurynFloat mul_tau_mem = dt/tau_mem;
-//    auryn_vector_float_saxpy(mul_tau_mem,t_exc,mem);
-//    auryn_vector_float_saxpy(-mul_tau_mem,t_inh,mem);
-//    auryn_vector_float_saxpy(-mul_tau_mem,t_leak,mem);
-//}
-
 void Izhikevich2003Group::check_peaks()
 {
 	for ( AurynState * i = mem->data ; i != mem->data+get_rank_size() ; ++i ) { // it's important to use rank_size here otherwise there might be spikes from units that do not exist
     	if ( *i > V_peak ) {
 			NeuronID unit = i-mem->data;
 			push_spike(unit);
-		    set_val (mem, unit, e_reset); // reset
+		    set_val (mem, unit, V_reset); // reset
 		    if (use_recovery)
 		    	set_val (u, unit, d); //refractory
 		}
@@ -357,69 +421,15 @@ void Izhikevich2003Group::evolve()
 {
 	check_peaks(); // moved to front of function, so that the monitors can actually track the above-peak membrane potentials!
 
-	if (doProperChannelStuff)
-	{
-		integrate_linear_nmda_synapses();
-	}
-	else
-	{
-		auryn_vector_float_copy(g_ampa,t_exc);
-		auryn_vector_float_set_zero(g_ampa);
-	}
+	//auryn_vector_float_copy(g_ampa,t_exc);
+	//auryn_vector_float_set_zero(g_ampa);
 
 	//integrate_membrane();
-	integrate_membrane_debug();
-}
+	//integrate_membrane_debug();
+	integrate_membrane_debug_two();
 
-
-void Izhikevich2003Group::set_tau_mem(AurynFloat taum)
-{
-	tau_mem = taum;
-	calculate_scale_constants();
-}
-
-AurynFloat Izhikevich2003Group::get_tau_mem()
-{
-	return tau_mem;
-}
-
-void Izhikevich2003Group::set_tau_ampa(AurynFloat taum)
-{
-	tau_ampa = taum;
-	calculate_scale_constants();
-}
-
-AurynFloat Izhikevich2003Group::get_tau_ampa()
-{
-	return tau_ampa;
-}
-
-void Izhikevich2003Group::set_tau_gaba(AurynFloat taum)
-{
-	tau_gaba = taum;
-	calculate_scale_constants();
-}
-
-AurynFloat Izhikevich2003Group::get_tau_gaba()
-{
-	return tau_gaba;
-}
-
-void Izhikevich2003Group::set_tau_nmda(AurynFloat taum)
-{
-	tau_nmda = taum;
-	calculate_scale_constants();
-}
-
-AurynFloat Izhikevich2003Group::get_tau_nmda()
-{
-	return tau_nmda;
-}
-
-void Izhikevich2003Group::set_ampa_nmda_ratio(AurynFloat ratio)
-{
- 	A_ampa = ratio/(ratio+1.0);
-	A_nmda = 1./(ratio+1.0);
+	// TODO: reactivate this?
+	//auryn_vector_float_set_zero(t_exc);
 }
 
 
@@ -427,27 +437,22 @@ AurynState Izhikevich2003Group::get_t_exc(NeuronID i)
 {
 	return get_val(t_exc,i);
 }
-
 AurynState Izhikevich2003Group::get_t_inh(NeuronID i)
 {
 	return get_val(t_inh,i);
 }
-
 AurynState Izhikevich2003Group::get_v_temp(NeuronID i)
 {
 	return get_val(v_temp,i);
 }
-
 AurynState Izhikevich2003Group::get_u_temp(NeuronID i)
 {
 	return get_val(u_temp,i);
 }
-
 AurynState Izhikevich2003Group::get_u(NeuronID i)
 {
 	return get_val(u,i);
 }
-
 AurynState Izhikevich2003Group::get_tempMemState(int i)
 {
 	return (AurynState)tempMemStates[i];

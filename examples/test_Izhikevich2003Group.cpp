@@ -40,7 +40,7 @@ int main(int ac, char* av[])
 	NeuronID seed = 1;
 	double kappa = 5.;
 	double simtime = 0.9;  // in seconds
-	double steptimepoint = 0.01;  // in seconds
+	double steptimepoint = 9.09;  // in seconds
 
 	int errcode = 0;
 
@@ -125,21 +125,22 @@ int main(int ac, char* av[])
 
 	NeuronID N_post = 1;
 	Izhikevich2003Group* izhi_neuron = new Izhikevich2003Group(N_post);
-	CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"mem");
-	//CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
-	theInjector->set_current(0,0.0);  // start with no added current
 
 	VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem");
 	StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"u", "test_Izhi.u");
 	StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"t_exc", "test_Izhi.t_exc");
 	SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras", size);
 
+	//CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"mem");
+	CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
+	theInjector->set_current(0,0.0);  // start with no added current
+
 	///< simulate until the current step:
 	if (!sys->run(steptimepoint,false))
 			errcode = 2;
 
 
-	double stepcurrent = 17*pA;  // still not sure which order of mag this needs to be...
+	double stepcurrent = 2000.0;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
 	theInjector->set_current(0,stepcurrent);
 
 

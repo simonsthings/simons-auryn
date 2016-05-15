@@ -30,17 +30,13 @@
 #include "NeuronGroup.h"
 #include "System.h"
 
+enum Izhikevich_DefaultParametersets {default_2003, fitted_2003, A_2004, B_2004, C_2004, D_2004, E_2004, F_2004, G_2004
+	, H_2004, I_2004, J_2004, K_2004, L_2004, M_2004, N_2004, O_2004, P_2004, Q_2004, R_2004, S_2004, T_2004
+	, RS_2007};
 
-/*! \brief Implements the standard integrate and file model used in Auryn.
+/*! \brief Implements the Izhikevich neuron model as published in (2003,2004,2007).
  *
- * This is the implementation of a standard leaky integrate and fire model
- * with relative refractoriness and conductance based synapses. The model
- * has two time constants for excitatory conductances (AMPA,NMDA). AMPA 
- * conductances are modelled as exponential decays. NMDA is implemented to 
- * have a double exponental timecourse, by low-pass filtering over the AMPA
- * equation. The amplitude between the individual contributions can be 
- * ajusted via set_ampa_nmda_ratio. The voltage dependence of NMDA is 
- * ignored in this model.
+ * This model hopefully resolves some inconsistencies between the different published versions.
  */
 class Izhikevich2003Group : public NeuronGroup
 {
@@ -48,14 +44,28 @@ private:
 	auryn_vector_float * t_leak;
 	auryn_vector_float * t_exc;
 	auryn_vector_float * t_inh;
-	AurynFloat scale_ampa,scale_gaba, scale_thr;
-	AurynFloat tau_ampa,tau_gaba,tau_nmda;
-	AurynFloat A_ampa,A_nmda;
-	AurynFloat e_rest,e_rev,thr_rest,tau_mem,tau_thr,dthr;
+    AurynFloat * handle_mem;
+    AurynFloat * handle_u;
+    AurynFloat * handle_u_temp;
+    AurynFloat * handle_e_input;
+	AurynFloat scale_mem, scale_u;
+
+	//AurynFloat scale_ampa,scale_gaba, scale_thr;
+	//AurynFloat tau_ampa,tau_gaba,tau_nmda;
+	//AurynFloat A_ampa,A_nmda;
+	//AurynFloat e_rest,e_rev,thr_rest,tau_mem,tau_thr,dthr;
+
+	// SI unit converters:
+	AurynFloat mV = 1e-3;  // needed to generalise Izhikevich model to SI units and other timestep durations.
+	AurynFloat ms = 1e-3;  // needed to generalise Izhikevich model to SI units and other timestep durations.
+	AurynFloat pF = 1e-12; // needed to generalise Izhikevich model to SI units and other timestep durations.
 
 	// izhikevich parameters:
-	AurynFloat mV,ms; // needed to generalise Izhikevich model to SI units and other timestep durations.
+	AurynDouble mem_coeffs[3]; // used to pre-compute some stuff and make the 2003 and 2007 versions compatible.
+	AurynDouble u_coeffs[2];       // needed to make the 2003, 2004 and 2007 versions of Izhikevich code compatible.
+
 	AurynFloat a,b,c,d;
+	AurynFloat V_reset;
 	AurynFloat V_peak; // spike top cutoff at +30mV. This is not a LIF spiek threshold, as the izhikevich neuron produces its own spike upstrokes.
 	AurynFloat V_min; // used to stabilize izhikevich neurons! Otherwise, strong input pulses might push it into extreme firing!
 
@@ -64,7 +74,6 @@ private:
 	AurynFloat v_rest; // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
 	AurynFloat v_thres; // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
 
-	bool doProperChannelStuff;
 	bool consistent_integration;
 	bool use_recovery; // one-dimensional model as mentioned in Izhikevich (2004) "Choosing models" paper.
 	auryn_vector_float * v_temp;
@@ -81,13 +90,15 @@ private:
 	void init();
 	void free();
 	void calculate_scale_constants();
-	void integrate_linear_nmda_synapses();
+	void calculate_Izhikevich_coefficients(AurynDouble k, AurynDouble v_rest, AurynDouble v_thres, AurynDouble b);
 	void integrate_membrane();
 	void integrate_membrane_debug();
+	void integrate_membrane_debug_two();
 	void check_peaks();
-	//void integrate_membrane_IFNeuron();
+
 public:
-	AurynFloat e_reset;
+	bool use2003integration = false; ///< a switch to exactly reproduce the behaviour of the 2003 matlab code. That code was numerically not quite correct, but was used a lot due to easy sharing. Not yet implemented.
+
 	/*! Default constructor.
 	 *
 	 * @param size the size of the group.  @param load a load specifier that
@@ -99,36 +110,16 @@ public:
 	 */
 	Izhikevich2003Group( NeuronID size, AurynFloat load = 1.0, NeuronID total = 0 );
 	virtual ~Izhikevich2003Group();
-	/*! Sets the membrane time constant */
-	void set_tau_mem(AurynFloat taum);
-	/*! Returns the membrane time constant */
-	AurynFloat get_tau_mem();
-
-	/*! Sets the exponential decay time constant of the AMPA conductance (default=5ms). */
-	void set_tau_ampa(AurynFloat tau);
-
-	/*! Returns the exponential decay time constant of the AMPA conductance. */
-	AurynFloat get_tau_ampa();
-
-	/*! Sets the exponential decay time constant of the GABA conductance (default=10ms). */
-	void set_tau_gaba(AurynFloat tau);
-
-	/*! Returns the exponential decay time constant of the GABA conductance. */
-	AurynFloat get_tau_gaba();
-
-	/*! Sets the exponential decay time constant of the NMDA conductance (default=100ms).
-	 * The rise is governed by tau_ampa if tau_ampa << tau_nmda. */
-	void set_tau_nmda(AurynFloat tau);
-
-	/*! Returns the exponential decay time constant of the NMDA conductance.
-	 * The rise is governed by tau_ampa if tau_ampa << tau_nmda. */
-	AurynFloat get_tau_nmda();
-	/*! Set ratio between ampa/nmda contribution to excitatory conductance. */
-	void set_ampa_nmda_ratio(AurynFloat ratio);
 	void clear();
+
+	/**
+	 * For reproducing the overview image of Izhikevich (2004) and Figure 8.8 (p.277) of the book, we provide the default example settings
+	 * for this neuron model.
+	 */
+	void select_example_parameter_set(Izhikevich_DefaultParametersets paramsetchoice);
+
 	/*! Internally used evolve function. Called by System. */
 	virtual void evolve();
-
 
 	AurynState get_t_exc(NeuronID i);
 	AurynState get_t_inh(NeuronID i);
