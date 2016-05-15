@@ -30,9 +30,9 @@
 #include "NeuronGroup.h"
 #include "System.h"
 
-enum Izhikevich_DefaultParametersets {default_2003, fitted_2003, A_2004, B_2004, C_2004, D_2004, E_2004, F_2004, G_2004
-	, H_2004, I_2004, J_2004, K_2004, L_2004, M_2004, N_2004, O_2004, P_2004, Q_2004, R_2004, S_2004, T_2004
-	, RS_2007};
+enum Izhikevich_DefaultParametersets {default_2003, fitted_2003, fig2004_A, fig2004_B, fig2004_C, fig2004_D, fig2004_E, fig2004_F, fig2004_G
+	, fig2004_H, fig2004_I, fig2004_J, fig2004_K, fig2004_L, fig2004_M, fig2004_N, fig2004_O, fig2004_P, fig2004_Q, fig2004_R, fig2004_S, fig2004_T
+	, book2007_RS};
 
 /*! \brief Implements the Izhikevich neuron model as published in (2003,2004,2007).
  *
@@ -64,8 +64,8 @@ private:
 	AurynDouble mem_coeffs[3]; // used to pre-compute some stuff and make the 2003 and 2007 versions compatible.
 	AurynDouble u_coeffs[2];       // needed to make the 2003, 2004 and 2007 versions of Izhikevich code compatible.
 
-	AurynFloat a,b,c,d;
-	AurynFloat V_reset;
+	AurynFloat izhi_a,izhi_b,izhi_c,izhi_d;
+	AurynFloat V_reset, V_init, U_init;
 	AurynFloat V_peak; // spike top cutoff at +30mV. This is not a LIF spiek threshold, as the izhikevich neuron produces its own spike upstrokes.
 	AurynFloat V_min; // used to stabilize izhikevich neurons! Otherwise, strong input pulses might push it into extreme firing!
 

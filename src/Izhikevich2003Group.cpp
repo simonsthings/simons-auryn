@@ -58,10 +58,12 @@ void Izhikevich2003Group::init()
 	use_recovery = true;
 
 	select_example_parameter_set(Izhikevich_DefaultParametersets::default_2003);
-	cout << "The Izhikevich coefficients are now: ";
+	cout << "The Izhikevich coefficients are now: " << endl;
 	cout << " a2 = " << mem_coeffs[2];
 	cout << ", a1 = " << mem_coeffs[1];
 	cout << ", a0 = " << mem_coeffs[0] << endl;
+	cout << " U:     a1 = " << u_coeffs[1];
+	cout << ", a0 = " << u_coeffs[0] << endl;
 
 	/** Begin set up Handles **/
     handle_mem = auryn_vector_float_ptr ( mem , 0 );
@@ -76,6 +78,21 @@ void Izhikevich2003Group::init()
 
 	clear();
 }
+void Izhikevich2003Group::clear()
+{
+	clear_spikes();
+
+	//auryn_vector_float_set (mem, i, e_rest);
+	auryn_vector_float_set_all(mem, V_init);
+	auryn_vector_float_set_all (thr, 0.);
+	auryn_vector_float_set_all (g_ampa, 0.);
+	auryn_vector_float_set_all (g_gaba, 0.);
+	auryn_vector_float_set_all (g_nmda, 0.);
+
+	auryn_vector_float_set_all (u, U_init);
+	auryn_vector_float_set_all (inputCurrents, 0.);
+	auryn_vector_float_set_all (backgroundCurrents, 0.);
+}
 
 void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParametersets paramsetchoice)
 {
@@ -85,55 +102,77 @@ void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParamet
 	switch (paramsetchoice)
 	{
 	case Izhikevich_DefaultParametersets::default_2003:
-		a = 0.02;
-		b = 0.2;
-		c = -65; // mV, but don't use SI for now.
-		d = 2;
-		V_peak = 30;//*mV;
+		izhi_a = 0.02;
+		izhi_b = 0.2;
+		izhi_c = -65; // mV, but don't use SI for now.
+		izhi_d = 6;
 		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
 		C = 1;
 		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
 		v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
 		v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		//v_thres = 82.6556*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		//v_rest  = 42.3444*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		// FIXME: not sure if the fit really is correct as v_rest and v_thres need to be positive for the coeffs to be computed correctly!
-		V_reset = c;
+
+		V_peak = 30*mV;
+		V_reset = izhi_c*mV;
+		V_init = -70*mV;
+		U_init = izhi_b*V_init/mV;
 		mem_coeffs[0] = 140;
-		mem_coeffs[1] = 5;
-		mem_coeffs[2] = 0.04 ;
+		mem_coeffs[1] = 5 /mV;
+		mem_coeffs[2] = 0.04 /mV/mV;
 		u_coeffs[0] = 0;
-		u_coeffs[1] = b;
+		u_coeffs[1] = izhi_b /mV;
 		break;
 	case Izhikevich_DefaultParametersets::fitted_2003:
-		a = 0.02;
-		b = 0.2;
-		c = -65;
-		d = 2;
-		V_peak = 30*mV;
+		izhi_a = 0.02;
+		izhi_b = 0.2;
+		izhi_c = -65;
+		izhi_d = 6;
 		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
 		C = 1;
 		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-		//v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		//v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_rest  = 42.3444*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_thres = 82.6556*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		// FIXME: not sure if the fit really is correct as v_rest and v_thres need to be positive for the coeffs to be computed correctly!
-		calculate_Izhikevich_coefficients(k,v_rest,v_thres,b);
+		v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+
+		V_peak = 30*mV;
+		V_reset = izhi_c*mV;
+		V_init = -70*mV;
+		U_init = izhi_b*V_init/mV;
+		calculate_Izhikevich_coefficients(k,v_rest,v_thres,izhi_b);
+		u_coeffs[0] = 0;
 		break;
-	case Izhikevich_DefaultParametersets::A_2004:
+	case Izhikevich_DefaultParametersets::fig2004_A:
 		// To allow RS neuron of p. 274 of Izhikevich book, use these params:
-		a = 0.03;
-		b = -2;
-		c = -50; // mV
-		d = 100;
-		V_peak = 35*mV;
+		izhi_a = 0.03;
+		izhi_b = -2;
+		izhi_c = -50;
+		izhi_d = 100;
 		C = 100;  // pF
 		k = 0.7;                // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_rest  = -60*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_thres = -40*mV;  // instantaneous threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -60;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -40;  // instantaneous threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
 		// I_syn = 70; // pA
-		calculate_Izhikevich_coefficients(k,v_rest,v_thres,b);
+		V_peak = 35*mV;
+		V_reset = izhi_c*mV;
+		V_init = v_rest*mV;
+		U_init = 0;
+		calculate_Izhikevich_coefficients(k,v_rest,v_thres,izhi_b);
+		break;
+	case Izhikevich_DefaultParametersets::book2007_RS:
+		// To allow RS neuron of p. 274 of Izhikevich book, use these params:
+		izhi_a = 0.03;
+		izhi_b = -2;
+		izhi_c = -50;
+		izhi_d = 100;
+		C = 100;  // pF
+		k = 0.7;                // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -60;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -40;  // instantaneous threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		// I_syn = 70; // pA
+		V_peak = 35*mV;
+		V_reset = izhi_c*mV;
+		V_init = v_rest*mV;
+		U_init = 0;
+		calculate_Izhikevich_coefficients(k,v_rest,v_thres,izhi_b);
 		break;
 	default:
 		throw std::logic_error("Unhandled switch case!");
@@ -143,28 +182,11 @@ void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParamet
 void Izhikevich2003Group::calculate_Izhikevich_coefficients(AurynDouble k, AurynDouble v_rest, AurynDouble v_thres, AurynDouble b)
 {
 	mem_coeffs[0] = k * v_rest * v_thres;
-	mem_coeffs[1] = k * (v_rest + v_thres);
-	mem_coeffs[2] = k ;
+	mem_coeffs[1] = k * -(v_rest + v_thres)  /mV;
+	mem_coeffs[2] = k  /mV/mV;
 
-	u_coeffs[0] = b*v_rest;
-	u_coeffs[1] = b;
-
-	V_reset = c*mV;
-}
-void Izhikevich2003Group::clear()
-{
-	clear_spikes();
-
-	//auryn_vector_float_set (mem, i, e_rest);
-	auryn_vector_float_set_all(mem, V_reset);
-	auryn_vector_float_set_all (thr, 0.);
-	auryn_vector_float_set_all (g_ampa, 0.);
-	auryn_vector_float_set_all (g_gaba, 0.);
-	auryn_vector_float_set_all (g_nmda, 0.);
-
-	auryn_vector_float_set_all (u, b*c);
-	auryn_vector_float_set_all (inputCurrents, 0.);
-	auryn_vector_float_set_all (backgroundCurrents, 0.);
+	u_coeffs[0] = b*-v_rest;
+	u_coeffs[1] = b   /mV;
 }
 void Izhikevich2003Group::free()
 {
@@ -190,6 +212,7 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
     {
 		if (use_recovery)
 		{
+/*
 			//double tempscaler = 1e3;
 			double tempscaler = 1;
 			cout << setiosflags(ios::fixed) << setprecision(6);
@@ -199,12 +222,18 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 			cout << "inputcurrent: " << (handle_inputcurrent[n])*tempscaler << endl;
 			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*tempscaler << endl;
 			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*tempscaler << endl << endl;
-
+*/
 			//handle_u[n] += dt/ms * a * ( b * (handle_mem[n]-v_rest)/mV - handle_u[n] );
 			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u_temp[n] + handle_inputcurrent[n] ) ;
 
-			handle_u[n] += dt * a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
-			handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
+			//handle_u[n] += dt * a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
+			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
+
+			//handle_u[n] +=         a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
+			//handle_mem[n] +=         ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
+
+			handle_u[n] += dt/ms * izhi_a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
+			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
 		}
 		else
 		{
@@ -227,8 +256,9 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + 0 ) ;
 			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + handle_inputcurrent[n] ) ;
 
-			handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - 13.0  + 000.0 + handle_inputcurrent[n]  ) ;
 			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  0 + 20 ) ;
+			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] + 13 + handle_inputcurrent[n]  ) ;
+			handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
 		}
     }
 
@@ -294,7 +324,7 @@ void Izhikevich2003Group::integrate_membrane_debug()
 
 	if (use_recovery)
 	{
-		u->data[0] += h * a * (b * V - U);
+		u->data[0] += h * izhi_a * (izhi_b * V - U);
 	}
 
 	tempMemStates[0] = h;
@@ -378,10 +408,10 @@ void Izhikevich2003Group::integrate_membrane()
 
 			// need a temp vector (bare with me: starting with contents of mem!):
 			auryn_vector_float_copy(mem,u_temp); // fill temp vector from mem (=v)
-			auryn_vector_float_scale(b,u_temp);  // b * v
+			auryn_vector_float_scale(izhi_b,u_temp);  // b * v
 			auryn_vector_float_saxpy(-1,u,u_temp);  // -1 * u + [...]
 
-			auryn_vector_float_scale(a,u_temp);  // a * [...]
+			auryn_vector_float_scale(izhi_a,u_temp);  // a * [...]
 			// multiply the whole thing with the simulation step size! TODO: check if I'm doing this right. This step may need to use "1" instead of dt. (In which case this line needs to be skipped!)
 			//auryn_vector_float_scale(dt,u_temp);
 		}
@@ -417,7 +447,8 @@ void Izhikevich2003Group::check_peaks()
 			push_spike(unit);
 		    set_val (mem, unit, V_reset); // reset
 		    if (use_recovery)
-		    	set_val (u, unit, d); //refractory
+		    	auryn_vector_float_add_constant(u,izhi_d); //refractory
+	    		//auryn_vector_float_set(u,unit,d); //refractory
 		}
 	}
 

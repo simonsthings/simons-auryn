@@ -39,8 +39,8 @@ int main(int ac, char* av[])
 	NeuronID size = 1000;
 	NeuronID seed = 1;
 	double kappa = 5.;
-	double simtime = 9.0;  // in seconds
-	double stepAt  = 0.9;  // in seconds
+	double simtime = 0.1;  // in seconds
+	double stepAt  = simtime/10.0;  // in seconds
 
 	if (stepAt >= simtime)
 		throw logic_error("the step time must be within the sim time!!");
@@ -143,7 +143,7 @@ int main(int ac, char* av[])
 			errcode = 2;
 
 
-	double stepcurrent = 700.0 * 1e3;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	double stepcurrent = 14.0 / dt;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
 	theInjector->set_current(0,stepcurrent);
 
 

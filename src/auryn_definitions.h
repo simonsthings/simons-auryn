@@ -94,7 +94,7 @@ namespace mpi = boost::mpi;
 // #define CODE_COLLECT_SYNC_TIMING_STATS //!< toggle  collection of timing data on sync/all_gather
 
 /*! System wide integration time step */
-const double dt = 1.0e-4;
+const double dt = 1.0e-3/4.0;
 
 /*! System wide minimum delay which determines
  * the sync interval between nodes in units of dt.
