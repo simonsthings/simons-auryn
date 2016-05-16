@@ -55,7 +55,7 @@ void Izhikevich2003Group::init()
 	inputCurrents =  get_state_vector("inputCurrents");
 	backgroundCurrents = get_state_vector("backgroundCurrents");
 	consistent_integration = true;
-	use_recovery = true;
+	use_recovery = false;
 
 	select_example_parameter_set(Izhikevich_DefaultParametersets::default_2003);
 	cout << "The Izhikevich coefficients are now: " << endl;
@@ -237,7 +237,7 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 		}
 		else
 		{
-
+/*
 			//double tempscaler = 1e3;
 			double tempscaler = 1;
 			cout << setiosflags(ios::fixed) << setprecision(6);
@@ -247,7 +247,7 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 			cout << "inputcurrent: " << (handle_inputcurrent[n])*tempscaler << endl;
 			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*tempscaler << endl;
 			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*tempscaler << endl << endl;
-
+*/
 
 			// uses handle_u directly, instead of the copied handle_u_temp:
 			//handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u[n] + 0 ) ;
@@ -258,7 +258,9 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 
 			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  0 + 20 ) ;
 			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] + 13 + handle_inputcurrent[n]  ) ;
-			handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
+			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
+
+			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
 		}
     }
 
