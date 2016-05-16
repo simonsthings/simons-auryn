@@ -422,7 +422,8 @@ STDPConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_neu
 	// END neuron groups & settings.
 	// BEGIN Connections & settings:
 	AurynWeight weight = simparams.get<float>("connectionsets.con1.initialweight"); //0.1;
-	AurynFloat sparseness = 0.99999999;
+	//AurynFloat sparseness = 0.99999999;  // 1.0 is actually fine!
+	AurynFloat sparseness = 1.0;
 	AurynFloat eta = simparams.get<float>("connectionsets.con1.stdprule.learningrate"); //0.01;  // learningrate (?)
 	AurynFloat A_plus = simparams.get<float>("connectionsets.con1.stdprule.A_plus");
 	AurynFloat A_minus = simparams.get<float>("connectionsets.con1.stdprule.A_minus");

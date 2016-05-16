@@ -460,8 +460,9 @@ void Izhikevich2003Group::evolve()
 {
 	check_peaks(); // moved to front of function, so that the monitors can actually track the above-peak membrane potentials!
 
-	//auryn_vector_float_copy(g_ampa,t_exc);
-	//auryn_vector_float_set_zero(g_ampa);
+	double projMult = 10.0;
+	auryn_vector_float_saxpy(projMult,g_ampa,t_exc);
+	auryn_vector_float_set_zero(g_ampa);
 
 	//integrate_membrane();
 	//integrate_membrane_debug();
