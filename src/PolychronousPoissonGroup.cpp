@@ -28,7 +28,7 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 	PolychronousPoissonGroup::N_subpresenting = N_subpresenting;
 
 	// Defaults:
-	twoLegged = true;
+	twoLegged = false;
 	useRandomPermutations = false;
 	participationProbability = 1.0;
 
@@ -159,8 +159,6 @@ void PolychronousPoissonGroup::constructNextBufferContents(PermutableSpiketrainB
 
 	//cout << "Constructing next buffer contents." << endl;
 
-	return;
-
 	// get the quantized value for this varchoices value. Round it so that we have recurring patterns:
 	int quantValue = int(round(N_presenting * representedValues[subpati] ));
 
@@ -185,7 +183,6 @@ void PolychronousPoissonGroup::constructNextBufferContents(PermutableSpiketrainB
 
     // get some latencies to sort on:
     unorderedLatencies.clear();
-return;
 	theBuffer->getRandomSpiketimeOfActiveUnits(&unorderedLatencies,&spikingUnitIDs);
 	//theBuffer->getActiveUnitsAndRandomSpiketimes(&spikingUnitIDs,&unorderedLatencies,N_subpresenting,poly_gen,int_dist);
 	//theBuffer->getRandomSpiketimeOfActiveUnits(&unorderedLatencies, &spikingUnitIDs, poly_gen, int_dist);
@@ -205,16 +202,18 @@ return;
 
 	if (false)
 	{
-		int countSU = 0;
-		for (auto unit : spikingUnitIDs)
+		//int countSU = 0;
+		for (int countSU = 0 ; countSU < spikingUnitIDs.size() ; ++countSU)
+		//for (auto unit : spikingUnitIDs)
 		{
-			cout << "The spikingUnitID " << ++countSU << " is: " << unit << endl;
+			cout << "The spikingUnitID " << countSU << " is: " << spikingUnitIDs[countSU] << endl;
 		}
 
-		int countORD = 0;
-		for (auto ordID : orderingIndices)
+		//int countORD = 0;
+		for (int countORD = 0 ; countORD < orderingIndices.size() ; ++countORD)
+		//for (auto ordID : orderingIndices)
 		{
-			cout << "The orderingIndex " << ++countORD << " after sorting is: " << ordID << endl;
+			cout << "The orderingIndex " << countORD << " after sorting is: " << orderingIndices[countORD] << endl;
 		}
 
 
@@ -231,6 +230,7 @@ return;
 		}
 	}
 
+	// TODO: remove this after implementing below:
 	theBuffer->permuteSpiketrains(&spikingUnitIDs,&orderingIndices);
 
 
@@ -246,18 +246,18 @@ return;
 
 return;
 
-	SpikeContainer newsubpatPresentingIDs;
+	// make array of unit indices and fill with ID. (see later if this can be optimised)
+	vector<NeuronID> newsubpatPresentingIDs(N_presenting);
+	for (size_t i = 0; i != newsubpatPresentingIDs.size(); ++i) (newsubpatPresentingIDs)[i] = i;
+	//std::iota( orderingIndices->begin(), orderingIndices->end(), 0 );
 
 
-	// permute buffer with these indices:
-
-
-
-
-	// rearrange indices for twolegged or random permutation
+	// rearrange indices for twolegged or random permutation and apply value:
 	if (useRandomPermutations)
 	{
 		// rearrange permutation indices to represent the pattern for quantValue
+		// permute buffer with these indices:
+		//vector<NeuronID> permutationIndices(spikingUnitIDs.size());
 	}
 	else
 	{
@@ -269,6 +269,8 @@ return;
 		{
 			// leave as-is
 		}
+
+		// now shift by value.
 	}
 
 
@@ -278,6 +280,7 @@ return;
 	//unsigned int* permutationIndices;
 	//theBuffer->permuteSpiketrains(permutationIndices);
 
+	theBuffer->permuteSpiketrains(&spikingUnitIDs,&orderingIndices);
 
 
 }
@@ -312,19 +315,24 @@ void PolychronousPoissonGroup::evolve()
 	{
 		if (!buffers[current_read_buffer].hasUnreadTimesteps())
 		{
+			// using generateNoiseAhead() now instead of this:
 			// clear used buffer
-			buffers[current_read_buffer].clear();
+			//buffers[current_read_buffer].clear();
 
+			// the last read buffer is now our next write buffer ;)
+			current_write_buffer = current_read_buffer;
 
 			// prepare used buffer for next use by filling with random data (possibly this could be done by separate thread in the future?)
-			current_write_buffer = current_read_buffer;
-			for (AurynTime ti = 0 ; ti < max_patternDuration ; ++ti)
-			{
-				// this could probably be sped up by direct implementation:
-				pregen_spikes.clear();
-				PoissonGroup::evolve();
-				buffers[current_write_buffer].setSpikes(&pregen_spikes);
-			}
+			generateNoiseAhead(&buffers[current_write_buffer], patternDuration);
+
+			// using generateNoiseAhead() now instead of this:
+//			for (AurynTime ti = 0 ; ti < max_patternDuration ; ++ti)
+//			{
+//				// this could probably be sped up by direct implementation:
+//				pregen_spikes.clear();
+//				PoissonGroup::evolve();
+//				buffers[current_write_buffer].setSpikes(&pregen_spikes);
+//			}
 
 			// then switch buffers
 			current_read_buffer = (current_read_buffer + 1)%buffers.size();

@@ -46,10 +46,10 @@ void PermutableSpiketrainBuffer::getSpikesAtTimestep(SpikeContainer* targetspike
 {
 	for (NeuronID ni = 0 ; ni < N_total ; ++ni)
 	{
-		auto permutedNeuron = permutationIndices[ni];
+		NeuronID permutedNeuron = permutationIndices[ni];
 		if (theSpiketrains[permutedNeuron][timestep])
 		{
-			targetspikecontainer->push_back(permutedNeuron);
+			targetspikecontainer->push_back(ni);
 		}
 	}
 }
@@ -101,7 +101,7 @@ void PermutableSpiketrainBuffer::clear()
 {
 	for (NeuronID ni = 0 ; ni < N_total ; ++ni)
 	{
-		for (AurynTime ti = 0 ; ti < timesteps_total ; ++ti)
+		for (auto ti = 0 ; ti < timesteps_total ; ++ti)
 		{
 			theSpiketrains[ni][ti] = false;
 		}
@@ -132,12 +132,13 @@ void PermutableSpiketrainBuffer::permuteSpiketrains(SpikeContainer* whoToPermute
 	}
 
 
-	for (unsigned int nii = 0 ; nii < whoToPermute->size() ; ++nii)
+	for (unsigned int nii = 0 ; nii < thePermutationIndices->size() ; ++nii)
 	{
 		// assuming that thePermutationIndices is an exact permutation of whoToPermute:
 		//cout << "Changing index " << (*whoToPermute)[nii] << " to " << (*thePermutationIndices)[nii] << endl;
 		NeuronID theOldIndex = (*whoToPermute)[ nii ];
 		NeuronID theNewIndex = (*whoToPermute)[ (*thePermutationIndices)[nii] ];
+		//NeuronID theNewIndex = (*thePermutationIndices)[ (*whoToPermute)[nii] ];  // correctly crashes because the ranges are different.
 		//cout << "Changing index " << theOldIndex << " to " << theNewIndex << endl;
 		//cout << "  size of permutationIndices is " << permutationIndices.size() << endl;
 		//cout << "  the previous index at vector-field " << theOldIndex << " was: " << permutationIndices[theOldIndex] << endl;
@@ -214,12 +215,14 @@ void PermutableSpiketrainBuffer::getRandomSpiketimeOfActiveUnits(vector<AurynTim
 		//   Performance todo: What's more costly: The random number generator or an "if" statement to exclude single-spike randomisation?
 		unsigned int totalSpikesOfThisNeuronWithinBuffer = temp_spikepositions.size();
 		unsigned int random_spike_id = 0;
+
 		if (totalSpikesOfThisNeuronWithinBuffer > 1)
 		{
 			boost::random::uniform_int_distribution<int>::param_type newrange = boost::random::uniform_int_distribution<int>::param_type(0,totalSpikesOfThisNeuronWithinBuffer-1);
 			int_dist.param(newrange);  // set range parameters
 			random_spike_id = int_dist(temp_gen);
 		}
+
 		//else: random_spike_id remains at 0;
 
 
