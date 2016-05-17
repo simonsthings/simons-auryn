@@ -201,7 +201,7 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
 
 	if (use_recovery)
 	{
-		// will refer to this later via handle_u_temp:
+		// will refer to this below via handle_u_temp:
 		auryn_vector_float_copy(u,u_temp);
 	}
 
@@ -212,234 +212,23 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
     {
 		if (use_recovery)
 		{
-/*
-			//double tempscaler = 1e3;
-			double tempscaler = 1;
-			cout << setiosflags(ios::fixed) << setprecision(6);
-			cout << "with recovery!!" << endl;
-			cout << "mem: " << (handle_mem[n])*tempscaler << endl;
-			cout << "u:   " << (handle_u[n])  *tempscaler << endl;
-			cout << "inputcurrent: " << (handle_inputcurrent[n])*tempscaler << endl;
-			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*tempscaler << endl;
-			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*tempscaler << endl << endl;
-*/
-			//handle_u[n] += dt/ms * a * ( b * (handle_mem[n]-v_rest)/mV - handle_u[n] );
-			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u_temp[n] + handle_inputcurrent[n] ) ;
-
-			//handle_u[n] += dt * a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
-			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
-
-			//handle_u[n] +=         a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
-			//handle_mem[n] +=         ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
-
 			handle_u[n] += dt/ms * izhi_a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
 			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
 		}
 		else
 		{
-/*
-			//double tempscaler = 1e3;
-			double tempscaler = 1;
-			cout << setiosflags(ios::fixed) << setprecision(6);
-			cout << "no recovery." << endl;
-			cout << "mem: " << (handle_mem[n])*tempscaler << endl;
-			cout << "u:   " << (handle_u[n])  *tempscaler << endl;
-			cout << "inputcurrent: " << (handle_inputcurrent[n])*tempscaler << endl;
-			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*tempscaler << endl;
-			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*tempscaler << endl << endl;
-*/
-
-			// uses handle_u directly, instead of the copied handle_u_temp:
-			//handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u[n] + 0 ) ;
-			//handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u[n] + handle_inputcurrent[n] ) ;
-		//handle_mem[n] += mV * dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n]/mV/mV + mem_coeffs[1] * handle_mem[n]/mV + mem_coeffs[0]  -  -13 + handle_inputcurrent[n] ) ;
-			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + 0 ) ;
-			//handle_mem[n] += dt/ms * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  handle_u[n] + handle_inputcurrent[n] ) ;
-
-			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0]  -  0 + 20 ) ;
-			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] + 13 + handle_inputcurrent[n]  ) ;
-			//handle_mem[n] +=  dt * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
-
 			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
 		}
     }
 
-
 	// clip lower bound of membrane potential to account for bad (initial) conditions:
 	//auryn_vector_float_clip( mem, V_min );
-	tempMemStates[12] = handle_mem[0];
-
 }
 
 /// Integrate the internal state
 /*!
        This method applies the Euler integration step to the membrane dynamics.
  */
-void Izhikevich2003Group::integrate_membrane_debug()
-{
-	//AurynFloat projMult = 2000;  // the projection multiplier as used in my matlab code. get rid of this at some point!
-
-	AurynDouble h = dt/ms; //1;//0.1;
-	AurynFloat V = mem->data[0];
-	AurynFloat U = u->data[0]; // 0; //u->data[0];
-	AurynFloat I_syn = t_exc->data[0];
-
-	//AurynFloat I_scale = 0.02;  // before moving I_syn inside the brackets
-	//AurynFloat I_scale = 0.005;   // still with dt = 0.1 ms, outside of bracket?
-
-	AurynFloat I_scale;
-	if (false)  // doProperChannelStuff
-	{
-		if (dt == 1.0e-3)
-			I_scale = 500; // dt = 1 ms,   Indirect. Works! (quite fine: some ghosts, but tuning to early spikes remains stable here! Ratemax=1000, rateZero=10s)
-		else if (dt == 1.0e-4)
-			//AurynFloat I_scale = 50;  // dt = 0.1 ms. Indirect. Works! (quite broad set of strong weights, but ok. Also, some ghost may be starting to materialise into a second peak.)
-			I_scale = 50; // Indirect
-		else
-			cout << "Error error error error (doProperChannelStuff=true): dt=" << dt << endl;
-	}
-	else
-	{
-		if (dt == 1.0e-3)
-			I_scale = 2;   // dt = 1 ms    Direct.   Works! (well, repeated learning, but its something! Ratemax=500, rateZero=11-12s)
-		else if (dt == 1.0e-4)
-			//AurynFloat I_scale = 20;  // dt = 0.1 ms. Direct.   Works! (stable red first 50 inputs, then darkblue for another 250 inputs. Then random-looking! :-o)
-			I_scale = 20; // Direct
-		else
-			cout << "Error error error error (doProperChannelStuff=false): dt=" << dt << endl;
-	}
-
-	consistent_integration = true;
-
-	// use standard forward Euler numerics in this case
-	if (consistent_integration)
-	{
-		//mem->data[0] += mV * h * (0.04*V/mV*V/mV + 5.0*V/mV + 140 - U) + I_syn*I_scale;
-		mem->data[0] += mV * h * (0.04*V/mV*V/mV + 5.0*V/mV + 140 - U + I_syn*I_scale) ;   // divided by C=1pF
-	}
-	else
-	{
-		mem->data[0] += 0.5*h * (0.04*V*V/mV + 5.0*V + 140*mV - U) + 0.5*I_syn*I_scale;
-		AurynFloat V = mem->data[0];
-		mem->data[0] += 0.5*h * (0.04*V*V/mV + 5.0*V + 140*mV - U) + 0.5*I_syn*I_scale;
-	}
-
-	if (use_recovery)
-	{
-		u->data[0] += h * izhi_a * (izhi_b * V - U);
-	}
-
-	tempMemStates[0] = h;
-	tempMemStates[1] = V;
-	tempMemStates[2] = U;
-	tempMemStates[3] = I_syn;
-	tempMemStates[4] = mem->data[0];
-
-}
-void Izhikevich2003Group::integrate_membrane()
-{
-	// use standard forward Euler numerics in this case
-	if (consistent_integration)
-	{
-		/* BEGIN: Do the voltage */
-		// the NEST code, for comparison:
-		//S_.v_ += h*( 0.04*v_old*v_old + 5.0*v_old + 140.0 - u_old + S_.I_ + P_.I_e_)  +  B_.spikes_.get_value(lag) ;
-
-
-		// need a temp vector:
-		auryn_vector_float_copy(mem,v_temp);  // start with v_temp:=mem
-		tempMemStates[0] = v_temp->data[0];
-
-		// 0.04 * mem^2
-		auryn_vector_float_mul(v_temp,mem); // mem ^ 2
-		tempMemStates[1] = v_temp->data[0];
-		auryn_vector_float_scale(0.04,v_temp); // 0.04 * [...]
-		tempMemStates[2] = v_temp->data[0];
-
-		auryn_vector_float_scale(1/mV,v_temp); // scale by 1mV, as done e.g. in the NeuroML example http://www.opensourcebrain.org/projects/izhikevichmodel/wiki/Wiki
-		tempMemStates[3] = v_temp->data[0];
-
-
-		// + 5 * mem
-		auryn_vector_float_saxpy(5,mem,v_temp); // add 5*mem to v_temp
-		tempMemStates[4] = v_temp->data[0];
-
-
-		// start new temp variable. This is not actually needed, but increases readability for now.
-		auryn_vector_float_set_all(v_temp2,140);  // + ( 140
-		tempMemStates[5] = v_temp2->data[0];
-
-		// add input currents. TODO: This line may need to be changed later!
-		//auryn_vector_float_add(v_temp2,inputCurrents);
-
-		// subtract u from 140:
-		auryn_vector_float_saxpy(-1,u,v_temp2);  // - u
-		tempMemStates[6] = v_temp2->data[0];
-
-		// add constant background currents.
-		//auryn_vector_float_add(v_temp,backgroundCurrents);
-
-		// add any new spikes! Treat t_exc (?) as I_syn from neuroML model:
-		auryn_vector_float_add(v_temp2,t_exc);  // + I_syn
-		tempMemStates[7] = v_temp2->data[0];
-
-		auryn_vector_float_scale(mV,v_temp2); // scale by 1mV, as done e.g. in the NeuroML example http://www.opensourcebrain.org/projects/izhikevichmodel/wiki/Wiki
-		tempMemStates[8] = mem->data[0];
-
-		// add the voltage-scaled last term to v_temp:
-		auryn_vector_float_add(v_temp,v_temp2);  // + (140 - u + I_syn)
-		tempMemStates[9] = v_temp->data[0];
-
-
-		// multiply the whole thing with the simulation step size! TODO: check if I'm doing this right. This step may need to use "1" instead of dt. (In which case this line needs to be skipped!)
-		auryn_vector_float_scale(dt/ms,v_temp);
-		//auryn_vector_float_scale(ms/dt,v_temp); // likely wrong?
-		tempMemStates[10] = v_temp->data[0];
-
-		// add any new spikes!
-		//auryn_vector_float_add(v_temp,t_exc);
-		/* END: Do the voltage */
-
-
-
-		/* BEGIN: Do the recovery */
-		if (use_recovery)
-		{
-			// the NEST code, for comparison:
-			//S_.u_ += h * P_.a_ * (P_.b_*v_old - u_old);
-
-			// need a temp vector (bare with me: starting with contents of mem!):
-			auryn_vector_float_copy(mem,u_temp); // fill temp vector from mem (=v)
-			auryn_vector_float_scale(izhi_b,u_temp);  // b * v
-			auryn_vector_float_saxpy(-1,u,u_temp);  // -1 * u + [...]
-
-			auryn_vector_float_scale(izhi_a,u_temp);  // a * [...]
-			// multiply the whole thing with the simulation step size! TODO: check if I'm doing this right. This step may need to use "1" instead of dt. (In which case this line needs to be skipped!)
-			//auryn_vector_float_scale(dt,u_temp);
-		}
-		/* END: Do the recovery */
-
-		/* BEGIN: Apply! */
-		auryn_vector_float_add(mem,v_temp);
-		tempMemStates[11] = mem->data[0];
-		if (use_recovery)
-			auryn_vector_float_add(u,u_temp);
-		/* END: Apply! */
-	}
-	// use numerics published in Izhikevich (2003) in this case (not recommended)
-	else
-	{
-//		S_.v_ += h/2.0 * ( 0.04*S_.v_*S_.v_ + 5.0*S_.v_ + 140.0 - S_.u_ + S_.I_ + P_.I_e_)
-//	    		   +  B_.spikes_.get_value(lag);
-//		S_.v_ += h/2.0 * ( 0.04*S_.v_*S_.v_ + 5.0*S_.v_ + 140.0 - S_.u_ + S_.I_ + P_.I_e_)
-//	    		   +  B_.spikes_.get_value(lag);
-//		S_.u_ += h * P_.a_*(P_.b_*S_.v_ - S_.u_);
-	}
-
-	// lower bound of membrane potential
-	auryn_vector_float_clip( mem, V_min );
-	tempMemStates[12] = mem->data[0];
-}
 
 void Izhikevich2003Group::check_peaks()
 {
@@ -464,11 +253,8 @@ void Izhikevich2003Group::evolve()
 	auryn_vector_float_saxpy(projMult,g_ampa,t_exc);
 	auryn_vector_float_set_zero(g_ampa);
 
-	//integrate_membrane();
-	//integrate_membrane_debug();
 	integrate_membrane_debug_two();
 
-	// TODO: reactivate this?
 	auryn_vector_float_set_zero(t_exc);
 }
 

@@ -91,8 +91,6 @@ private:
 	void free();
 	void calculate_scale_constants();
 	void calculate_Izhikevich_coefficients(AurynDouble k, AurynDouble v_rest, AurynDouble v_thres, AurynDouble b);
-	void integrate_membrane();
-	void integrate_membrane_debug();
 	void integrate_membrane_debug_two();
 	void check_peaks();
 
