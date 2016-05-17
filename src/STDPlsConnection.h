@@ -23,8 +23,8 @@
 * Front Neuroinform 8, 76. doi: 10.3389/fninf.2014.00076
 */
 
-#ifndef STDPWDCONNECTION_H_
-#define STDPWDCONNECTION_H_
+#ifndef STDPLSCONNECTION_H_
+#define STDPLSCONNECTION_H_
 
 #include "auryn_definitions.h"
 #include "DuplexConnection.h"
@@ -43,7 +43,7 @@ using namespace std;
  * It is meant to be similar to stdp_synapse_hom in NEST. 
  *
  */
-class STDPwdConnection : public DuplexConnection
+class STDPlsConnection : public DuplexConnection
 {
 
 private:
@@ -86,22 +86,23 @@ public:
 
 	bool stdp_active;
 
-	STDPwdConnection(SpikingGroup * source, NeuronGroup * destination, 
+	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
 			TransmitterType transmitter=GLUT);
 
-	STDPwdConnection(SpikingGroup * source, NeuronGroup * destination, 
+	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
 			const char * filename, 
 			AurynWeight lambda=1e-5, 
 			AurynWeight maxweight=0.1 , 
 			TransmitterType transmitter=GLUT);
 
-	STDPwdConnection(SpikingGroup * source, NeuronGroup * destination, 
+	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
 			AurynWeight weight, AurynWeight sparseness=0.05, 
 			AurynWeight lambda=0.01, 
 			AurynWeight maxweight=100. , 
 			TransmitterType transmitter=GLUT,
-			string name = "STDPwdConnection" );
+			string name = "STDPlsConnection" );
 
+	void set_alphalambda_alternative(AurynWeight A_plus, AurynWeight A_minus, AurynWeight learningrate);
 	void set_alpha(AurynWeight a);
 	void set_lambda(AurynWeight l);
 
@@ -110,7 +111,7 @@ public:
 
 	void set_max_weight(AurynWeight w);
 
-	virtual ~STDPwdConnection();
+	virtual ~STDPlsConnection();
 	virtual void finalize();
 	void free();
 
@@ -119,4 +120,4 @@ public:
 
 };
 
-#endif /*STDPWDCONNECTION_H_*/
+#endif /*STDPLSCONNECTION_H_*/
