@@ -46,7 +46,7 @@ void Izhikevich2007Group::init()
 
 	
 	// new stuff!
-	if (true)
+	if (false)
 	{
 		// To allow RS neuron of p. 274 of Izhikevich book, use these params:
 		C = 100*pF;  // pF
@@ -85,7 +85,7 @@ void Izhikevich2007Group::init()
 	inputCurrents =  get_state_vector("inputCurrents");
 	backgroundCurrents = get_state_vector("backgroundCurrents");
 	consistent_integration = true;
-	use_recovery = false;
+	use_recovery = true;
 	//e_rest = c;//*1e-3;  // mV. Not sure about scaling here, though.
 	//e_reset = c;//*1e-3; // mV. Not sure about scaling here, though.
 	doProperChannelStuff = false;   // for debugging.
@@ -102,7 +102,7 @@ void Izhikevich2007Group::init()
 
     // scale constants to keep time and other units SI-conform:
 	scale_mem = dt/ms /(C/pF) * mV;
-	scale_u = dt/ms;
+	scale_u = dt/ms *mV;
 
 	//cout << setiosflags(ios::scientific) << setprecision(6);
 	cout << setiosflags(ios::fixed) << setprecision(6);
@@ -161,8 +161,15 @@ void Izhikevich2007Group::integrate_membrane()
     {
 		if (use_recovery)
 		{
-			handle_u[n] += scale_u * a * ( b * (handle_mem[n]-v_rest) - handle_u[n] );
-			handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest) * (handle_mem[n]-v_thres) - handle_u_temp[n] + handle_inputcurrent[n] ) ;
+			cout << setiosflags(ios::fixed) << setprecision(6);
+			cout << "mem: " << (handle_mem[n])*1e3 << endl;
+			cout << " u : " << (handle_u[n])*1e3 << endl;
+			cout << "inputcurrent: " << (handle_inputcurrent[n])*1e3 << endl;
+			cout << "diff mem-v_rest: " << (handle_mem[n]-v_rest)*1e3 << endl;
+			cout << "diff mem-v_thresh: " << (handle_mem[n]-v_thres)*1e3 << endl << endl;
+
+			handle_u[n] += scale_u * a * ( b * (handle_mem[n]-v_rest)/mV - handle_u[n] );
+			handle_mem[n] += scale_mem * ( k * (handle_mem[n]-v_rest)/mV * (handle_mem[n]-v_thres)/mV - handle_u_temp[n] + handle_inputcurrent[n] ) ;
 		}
 		else
 		{

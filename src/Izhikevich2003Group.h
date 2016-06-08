@@ -74,8 +74,6 @@ private:
 	AurynFloat v_rest; // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
 	AurynFloat v_thres; // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
 
-	bool consistent_integration;
-	bool use_recovery; // one-dimensional model as mentioned in Izhikevich (2004) "Choosing models" paper.
 	auryn_vector_float * v_temp;
 	auryn_vector_float * v_temp2; // using second temp var for computations for now. May be optimised in the future.
 	auryn_vector_float * u_temp;
@@ -87,6 +85,8 @@ private:
 	// debugging only:
 	float tempMemStates[20];
 
+	AurynFloat projMult; // quick fix for the effect each single spike has on the postsynaptic membrane potential. Might also just be approached by changing w_max.
+
 	void init();
 	void free();
 	void calculate_scale_constants();
@@ -96,6 +96,8 @@ private:
 
 public:
 	bool use2003integration = false; ///< a switch to exactly reproduce the behaviour of the 2003 matlab code. That code was numerically not quite correct, but was used a lot due to easy sharing. Not yet implemented.
+	bool consistent_integration;
+	bool use_recovery; // one-dimensional model as mentioned in Izhikevich (2004) "Choosing models" paper.
 
 	/*! Default constructor.
 	 *
@@ -125,6 +127,8 @@ public:
 	AurynState get_u_temp(NeuronID i);
 	AurynState get_u(NeuronID i);
 	AurynState get_tempMemState(int i);
+	AurynFloat get_projMult();
+	void set_projMult(AurynFloat projMult);
 
 
 };

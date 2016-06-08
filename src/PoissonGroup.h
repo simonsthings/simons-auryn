@@ -84,7 +84,7 @@ public:
 	/*! Standard getter for the firing rate variable. */
 	AurynDouble get_rate();
 	/*! Use this to seed the random number generator. */
-	void seed(int s);
+	virtual void seed(int s);
 };
 
 #endif /*NEURONGROUP_H_*/

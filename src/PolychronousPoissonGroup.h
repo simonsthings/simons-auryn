@@ -92,6 +92,11 @@ public:
 	virtual ~PolychronousPoissonGroup();
 	virtual void evolve();
 
+	int get_stimulus_immediate();
+
+	virtual void seed(int s);
+
+
 	template<typename T> class CompareIndicesByAnotherVectorValues
 	{
 		std::vector<T>* _values;

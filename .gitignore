@@ -5,7 +5,7 @@
 */.libs
 
 # Ignore docs
-docs/*
+doc/*
 
 # Ignore stuff in the build dir
 build/*

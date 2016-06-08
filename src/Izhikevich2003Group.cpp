@@ -55,7 +55,7 @@ void Izhikevich2003Group::init()
 	inputCurrents =  get_state_vector("inputCurrents");
 	backgroundCurrents = get_state_vector("backgroundCurrents");
 	consistent_integration = true;
-	use_recovery = false;
+	use_recovery = true;
 
 	select_example_parameter_set(Izhikevich_DefaultParametersets::default_2003);
 	cout << "The Izhikevich coefficients are now: " << endl;
@@ -75,6 +75,8 @@ void Izhikevich2003Group::init()
     // scale constants to keep time and other units SI-conform:
 	scale_mem = dt/ms /(C/pF) * mV;
 	scale_u = dt/ms *mV;
+
+	projMult = 1.5 * ms/dt;  // by default, lets use the same multiplicator as in my matlab code.
 
 	clear();
 }
@@ -249,7 +251,15 @@ void Izhikevich2003Group::evolve()
 {
 	check_peaks(); // moved to front of function, so that the monitors can actually track the above-peak membrane potentials!
 
-	double projMult = 10.0;
+	// without recovery: best is projMult=0.8 with learningrate * 2
+	// projMult = 0.5 * ms/dt; // without recovery: learning works (*2), but then the neuron hardly ever manages to produce a spike!
+	// projMult = 0.8 * ms/dt; // 8.0; without recov: one-spike responses already at lr/1 ! But 2/6 do not learn within 400s. /2 seems to work more often than not, but always only after 400s. *2 surprisingly also works nicely! surprisingly well! best!  *4 doesn't work. *3 hardly ever works.
+	// projMult = 1.0 * ms/dt; // 8.0;  // without recovery: works for lr 1 with double spike. lr/2 looses 2nd spike :) (but takes longer than 400s to start sometimes, on /3 is takes more than 1600s often.)
+	//projMult = 1.5 * ms/dt; // 8.0;  // without recovery: only works for learningrate between /1 and /3
+
+
+	// projMult = 1.5 * ms/dt; // 8.0;  // with recovery! works with learningrate /4 to *10 and beyond.
+	// projMult = 50.5 * ms/dt; // 8.0;
 	auryn_vector_float_saxpy(projMult,g_ampa,t_exc);
 	auryn_vector_float_set_zero(g_ampa);
 
@@ -284,5 +294,14 @@ AurynState Izhikevich2003Group::get_tempMemState(int i)
 	return (AurynState)tempMemStates[i];
 }
 
+AurynFloat Izhikevich2003Group::get_projMult()
+{
+	return projMult;
+}
+
+void Izhikevich2003Group::set_projMult(AurynFloat the_projMult)
+{
+	projMult = the_projMult * ms/dt;  // adjust for possibly different dt in which the simulator may be compiled.
+}
 
 

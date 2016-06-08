@@ -74,12 +74,15 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 		patterntimesfile.precision(log(dt)/log(10)+1 );
 	}
 
-
-
-
-
-
 }
+
+void PolychronousPoissonGroup::seed(int s)
+{
+	PoissonGroup::seed(s);
+	initBuffers(max_patternDuration);
+}
+
+
 
 // Done:
 void PolychronousPoissonGroup::initBuffers(int delaysteps)
@@ -360,6 +363,10 @@ void PolychronousPoissonGroup::evolve()
 
 
 
+int PolychronousPoissonGroup::get_stimulus_immediate()
+{
+	return current_stimulus;
+}
 
 
 
