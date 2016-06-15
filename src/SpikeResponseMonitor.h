@@ -38,22 +38,21 @@ protected:
 	AurynTime maxPatternInterval;
 	AurynTime ssize;
 
-	vector<vector<LatencyContainer> > responseTrackers;
+	unordered_map< NeuronID , vector<LatencyContainer> > responseTrackers;
 	vector<vector<unsigned int>::iterator> responseTrackerIterators;
 	vector<AurynTime> lastPatternResets;
 
-	void init(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder, SpikeContainer trackedResponseNeurons,
-				  unsigned int maxPatternInterval, string filename, AurynTime binsize,
-				  unsigned int maxNumPatterns);
+	void init(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
+				  SpikeContainer trackedResponseNeurons, string filename, AurynTime binsize);
 
 public:
-	SpikeResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder, SpikeContainer trackedResponseNeurons,
-							 unsigned int maxPatternInterval, string filename, AurynTime binsize,
-							 unsigned int maxNumPatterns = 1);
+	SpikeResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
+							 SpikeContainer trackedResponseNeurons, string filename,
+							 AurynTime binsize);
 	virtual ~SpikeResponseMonitor();
 
 	virtual void propagate() override;
-
+	void displaySpikeCounts();
 };
 
 #endif /*SPIKERESPONSEMONITOR_H_*/

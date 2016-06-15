@@ -367,20 +367,35 @@ void PolychronousPoissonGroup::evolve()
 
 
 
-int PolychronousPoissonGroup::get_stimulus_immediate()
-{
-	return current_stimulus;
-}
-
-
 vector<PatternID> PolychronousPoissonGroup::get_stimuli_immediate()
 {
 	return stimuli_immediate;
 }
 
-NeuronID PolychronousPoissonGroup::getNumPatterns()
+PatternID PolychronousPoissonGroup::getNumPatterns()
 {
 	return numPatterns;
+}
+
+
+AurynTime PolychronousPoissonGroup::getMaxPatternDuration()
+{
+	return max_patternDuration;
+}
+
+void PolychronousPoissonGroup::setMaxPatternDuration(AurynTime max_patternDuration)
+{
+	PolychronousPoissonGroup::max_patternDuration = max_patternDuration;
+}
+
+AurynTime PolychronousPoissonGroup::getMaxPatternInterval()
+{
+	return max_patternInterval;
+}
+
+void PolychronousPoissonGroup::setMaxPatternInterval(AurynTime max_patternInterval)
+{
+	PolychronousPoissonGroup::max_patternInterval = max_patternInterval;
 }
 
 

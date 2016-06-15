@@ -47,6 +47,7 @@ private:
 	AurynTime patternDuration;	// may vary during runtime, if implemented
 	AurynTime patternInterval;	// may vary during runtime, if implemented
 	AurynTime max_patternDuration;	// fixed buffer size
+
 	AurynTime max_patternInterval;	// fixed buffer size
 
 	vector<PermutableSpiketrainBuffer> buffers; // we want multiple buffers, so that one can be read from, one can be ready, and possibly a third could be receiving "live" data from another thread (in the future).
@@ -92,13 +93,15 @@ public:
 	virtual ~PolychronousPoissonGroup();
 	virtual void evolve();
 
-	int get_stimulus_immediate();
 	vector<PatternID> get_stimuli_immediate();
 
 	virtual void seed(int s);
 
-	NeuronID getNumPatterns();
-
+	PatternID getNumPatterns();
+	AurynTime getMaxPatternDuration();
+	void setMaxPatternDuration(AurynTime max_patternDuration);
+	AurynTime getMaxPatternInterval() ;
+	void setMaxPatternInterval(AurynTime max_patternInterval);
 
 	template<typename T> class CompareIndicesByAnotherVectorValues
 	{
