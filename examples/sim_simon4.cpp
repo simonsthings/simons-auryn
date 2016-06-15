@@ -19,8 +19,10 @@
 */
 
 #include "auryn.h"
+#include "../src/System.h"
 #include <ctime>
 #include <boost/property_tree/json_parser.hpp>
+#include <SpikeResponseMonitor.h>
 
 using namespace std;
 
@@ -504,6 +506,14 @@ void setupHistoryTracking(SpikingGroup* poisson, NeuronGroup* detector_neuron,
 				tmpstr.c_str(),
 				getSamplinginterval(simparams,
 						"recordings.con1.samplinginterval_weightmatrix"));
+
+
+		NeuronID numPatterns = ((PolychronousPoissonGroup*)poisson)->getNumPatterns();
+		SpikeContainer* trackedNeurons = new SpikeContainer();
+		trackedNeurons->push_back(0);
+		AurynDouble patInterval = simparams.get<double>("neurongroups.inputs.patterninterval");
+		//SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup*)poisson, detector_neuron, *trackedNeurons, patInterval / dt, "", 1 / dt, 3);
+		SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup*)poisson, detector_neuron, *trackedNeurons, patInterval / dt, "", 1 / dt, numPatterns);
 
 	}
 	catch(exception& e) {

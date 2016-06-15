@@ -294,6 +294,9 @@ void PolychronousPoissonGroup::evolve()
 {
 	//cout << "evolving PolychronousPoissonGroup!" << endl;
 
+	// each stimulus only starts for one clock cylce. At all other times, the size is zero.
+	stimuli_immediate.clear();
+
 	if ( sys->get_clock() >= next_event ) {
 		if ( stimulus_active ) {
 			stimulus_active = false;
@@ -303,6 +306,7 @@ void PolychronousPoissonGroup::evolve()
 		} else {
 			stimulus_active = true;
 			current_stimulus = (current_stimulus+1)%numPatterns;
+			stimuli_immediate.push_back(current_stimulus);
 			x = 0;
 			patterntimesfile << sys->get_time() << " " << current_stimulus << endl;
 			//seed(current_stimulus+seedoffset);
@@ -366,6 +370,17 @@ void PolychronousPoissonGroup::evolve()
 int PolychronousPoissonGroup::get_stimulus_immediate()
 {
 	return current_stimulus;
+}
+
+
+vector<PatternID> PolychronousPoissonGroup::get_stimuli_immediate()
+{
+	return stimuli_immediate;
+}
+
+NeuronID PolychronousPoissonGroup::getNumPatterns()
+{
+	return numPatterns;
 }
 
 

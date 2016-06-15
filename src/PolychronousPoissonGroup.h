@@ -21,7 +21,7 @@ using namespace std;
 
 
 //typedef vector< vector<bool> > PermutableSpiketrainBuffer; //!< Multiple SpikeContainers, one for each time step.
-typedef vector<AurynTime> LatencyContainer;
+typedef unsigned int PatternID; //!< NeuronID is an unsigned integeger type used to index neurons in Auryn.
 
 /**
  * \brief A group that reshuffles Poisson noise spike trains to generate polychronous patterns.
@@ -43,7 +43,6 @@ private:
 	bool twoLegged;	// should synchain-like patterns be one long chain (twoLegged=false) or more like a double-sided wave?
 	bool useRandomPermutations; // or should patterns be random permutations of firing order?
 	AurynFloat participationProbability; // to further hide patterns in background data
-
 	NeuronID numPatterns;	// total number of distinct patterns (=stimuli)
 	AurynTime patternDuration;	// may vary during runtime, if implemented
 	AurynTime patternInterval;	// may vary during runtime, if implemented
@@ -67,6 +66,7 @@ private:
 	AurynTime next_event;
 	bool stimulus_active;
 	int current_stimulus;
+	vector<PatternID> stimuli_immediate;
 
 	SpikeContainer spikingUnitIDs;
 	vector<AurynTime> unorderedLatencies;
@@ -93,8 +93,11 @@ public:
 	virtual void evolve();
 
 	int get_stimulus_immediate();
+	vector<PatternID> get_stimuli_immediate();
 
 	virtual void seed(int s);
+
+	NeuronID getNumPatterns();
 
 
 	template<typename T> class CompareIndicesByAnotherVectorValues
