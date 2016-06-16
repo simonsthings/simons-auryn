@@ -32,27 +32,38 @@ typedef unordered_map<AurynTime,SpikeCount> LatencyContainer;
 class SpikeResponseMonitor : public Monitor
 {
 protected:
+	int numTrackedResponseNeurons; // delete this?
 	PolychronousPoissonGroup* spikepatternprovider;
 	NeuronGroup* responder;
-	SpikeContainer trackedResponseNeurons;
 	AurynTime maxPatternInterval;
 	AurynTime ssize;
 
-	unordered_map< NeuronID , vector<LatencyContainer> > responseTrackers;
+	vector<vector<LatencyContainer> > responseTrackers;
 	vector<vector<unsigned int>::iterator> responseTrackerIterators;
 	vector<AurynTime> lastPatternResets;
 
+	vector<vector<vector<AurynTime> > > singlePatternResponses;  // a SpikeContainer for each stimulus/pattern type.
+
+	vector<vector<vector<SpikeCount> > > latencyDependentSpikeCountsInCurrentWindow;
+	vector<PatternID> patternPresentationsInCurrentTrackingWindow;
+	vector<vector<unsigned int> > truepositivesInCurrentTrackingWindow;
+	vector<vector<unsigned int> > falsepositivesInCurrentTrackingWindow;
+
 	void init(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
-				  SpikeContainer trackedResponseNeurons, string filename, AurynTime binsize);
+			  int trackedResponseNeurons, string filename, AurynTime binsize);
 
 public:
 	SpikeResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
-							 SpikeContainer trackedResponseNeurons, string filename,
-							 AurynTime binsize);
+						 int trackFirstNeurons, string filename, AurynTime binsize);
 	virtual ~SpikeResponseMonitor();
 
 	virtual void propagate() override;
 	void displaySpikeCounts();
+
+	void computePeakStatistics(PatternID thePatternID);
+
+	void computeSpikeStatistics(PatternID thePatternID);
+
 };
 
 #endif /*SPIKERESPONSEMONITOR_H_*/
