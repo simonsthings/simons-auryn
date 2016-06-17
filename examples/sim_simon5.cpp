@@ -605,8 +605,8 @@ int main(int ac, char* av[])
 
 
 	// BEGIN History setup (writing to disk):
-	setupDetailedHistoryTracking(poisson, detector_neuron, con1, simparams);
-	//setupReducedHistoryTracking(poisson, detector_neuron, con1, simparams);
+	//setupDetailedHistoryTracking(poisson, detector_neuron, con1, simparams);
+	setupReducedHistoryTracking(poisson, detector_neuron, con1, simparams);
 	// END History setup (writing to disk).
 
 

@@ -44,6 +44,7 @@ protected:
 
 	vector<vector<vector<AurynTime> > > singlePatternResponses;  // a SpikeContainer for each stimulus/pattern type.
 
+	unsigned int requestedPatternPresentationsPerTrackingWindow;
 	vector<vector<vector<SpikeCount> > > latencyDependentSpikeCountsInCurrentWindow;
 	vector<PatternID> patternPresentationsInCurrentTrackingWindow;
 	vector<vector<unsigned int> > truepositivesInCurrentTrackingWindow;
@@ -60,10 +61,11 @@ public:
 	virtual void propagate() override;
 	void displaySpikeCounts();
 
-	void computePeakStatistics(PatternID thePatternID);
+	void computeMultiPatternStatistics(PatternID thePatternID);
 
-	void computeSpikeStatistics(PatternID thePatternID);
+	void computePerPatternStatistics(PatternID thePatternID);
 
+	void resetMultiPatternData(PatternID id);
 };
 
 #endif /*SPIKERESPONSEMONITOR_H_*/

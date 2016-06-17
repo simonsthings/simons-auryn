@@ -25,6 +25,7 @@ void SpikeResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovide
 	numTrackedResponseNeurons = trackFirstNeurons;  // what does this actually do? Copy? Or just grasp on to this new object?
 
 	PatternID numPatterns = theSpikepatternprovider->getNumPatterns();
+	requestedPatternPresentationsPerTrackingWindow = 50; // 50 = 10 seconds if there are 5 patterns per second.
 
 	responseTrackers.resize(trackFirstNeurons);
 	//for (int j = 0; j < maxNumPatterns; ++j)
@@ -68,6 +69,7 @@ void SpikeResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovide
 	}
 
 
+	outfile << "#  true_positive_rate  false_positive_rate  tpr/fpr " << endl;
 	outfile << setiosflags(ios::scientific) << setprecision(6);
 }
 
@@ -82,15 +84,20 @@ void SpikeResponseMonitor::propagate()
 	//if (anyResponses.size() > 0 ) cout << "At least one spike was fired!" << endl;
 
 	// handle the arrival of a new pattern (by resetting the according timebin pointer).
-	//for (auto patternIter = anyPatterns.begin() ; patternIter != anyPatterns.end() ; ++patternIter)
-//	{
-//		PatternID thePatternID = *patternIter;
-//	}
 	for (PatternID thePatternID : anyPatterns)
 	{
+		patternPresentationsInCurrentTrackingWindow[thePatternID]++;
+
 		// TODO do the computations here! (well in some function of course) Also check if we should stop the evaluations now or continue for more evaluation windows.
-		computePeakStatistics(thePatternID);
-		computeSpikeStatistics(thePatternID);
+		computePerPatternStatistics(thePatternID);
+
+		if (patternPresentationsInCurrentTrackingWindow[thePatternID] > requestedPatternPresentationsPerTrackingWindow)
+		{
+			computeMultiPatternStatistics(thePatternID);
+			resetMultiPatternData(thePatternID);
+		}
+
+
 
 		// reset last pattern occurrence time:
 		lastPatternResets[thePatternID] = sys->get_clock();
@@ -151,7 +158,7 @@ void SpikeResponseMonitor::propagate()
 
 void SpikeResponseMonitor::displaySpikeCounts()
 {
-	cout << "Displaying spike counts!" << endl;
+	//cout << "Displaying spike counts!" << endl;
 	for (auto iter = responseTrackers.begin() ; iter != responseTrackers.end() ; ++iter)
 	{
 		auto & responseTrackersForThisNeuron = *iter;
@@ -159,66 +166,47 @@ void SpikeResponseMonitor::displaySpikeCounts()
 		{
 			LatencyContainer &lc = responseTrackersForThisNeuron[pid];
 			unordered_map<unsigned int, unsigned int>::iterator latencyIter;
-			//cout << "Current spike response delays of neuron n to pattern p: ";
-			cout << "Spike response delays (nX, pX): [";
+			//cout << "Spike response delays (nX, pX): [";
 
 			for (int ti = 0; ti < maxPatternInterval; ++ti)
 			{
-				cout << lc[ti] << " ";
+				//cout << lc[ti] << " ";
 			}
-
-
-//			for (latencyIter = lc.begin() ; latencyIter != lc.end() ; ++latencyIter)
-//			{
-//				//cout << latencyIter->first << "ms:" << latencyIter->second << "spk  ";
-//				cout << latencyIter->second << " ";
-//			}
-			//cout << " THE End." << endl;
-			cout << "]" << endl;
+			//cout << "]" << endl;
 
 			lc.clear();
 		}
 	}
 }
 
-void SpikeResponseMonitor::computePeakStatistics(PatternID thePatternID)
-{
-	// TODO: use the responseTrackers to find peaks of spike responses within the last X pattern presentations!
-}
-
-void SpikeResponseMonitor::computeSpikeStatistics(PatternID thePatternID)
+void SpikeResponseMonitor::computePerPatternStatistics(PatternID thePatternID)
 {
 	// TODO: use data on single-pattern responses to find out typical number of responses and false-positive rates etc.
 
-	AurynTime givenTPmaxtime = (AurynTime)  50.0 *1e-3/dt; // e.g. 50 ms/dt
-	AurynTime givenFPmintime = (AurynTime) 150.0 *1e-3/dt; // e.g. 150 ms/dt
+	AurynTime givenTPmaxtime = (AurynTime)  (20.0 *1e-3/dt); // e.g. 50 ms/dt
+	AurynTime givenFPmintime = (AurynTime) (150.0 *1e-3/dt); // e.g. 150 ms/dt
 
-	vector<AurynTime> latencyDependentSpikeCountLatencies;
-	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 10.0 *1e-3/dt );
-	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 20.0 *1e-3/dt );
-	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 30.0 *1e-3/dt );
-	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 40.0 *1e-3/dt );
+//	vector<AurynTime> latencyDependentSpikeCountLatencies;
+//	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 10.0 *1e-3/dt );
+//	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 20.0 *1e-3/dt );
+//	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 30.0 *1e-3/dt );
+//	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 40.0 *1e-3/dt );
 
-
-	patternPresentationsInCurrentTrackingWindow[thePatternID]++;
 
 	// for each response neuron:
 	for (int ni = 0; ni < singlePatternResponses.size(); ++ni)
 	{
 		auto spikeTimesForEachPattern = singlePatternResponses[ni];
-//	}
-//	for ( auto neuronIter = singlePatternResponses.begin() ; neuronIter != singlePatternResponses.end() ; neuronIter++  )
-//	{
-//		auto spikeTimesForEachPattern = (*neuronIter);
 		vector<AurynTime> theSpikeTimes = spikeTimesForEachPattern[thePatternID];
 
 
-		vector<SpikeCount> & latencyDependentSpikeCount = latencyDependentSpikeCountsInCurrentWindow[ni][thePatternID];
-		latencyDependentSpikeCount.clear();
-		latencyDependentSpikeCount.resize(latencyDependentSpikeCountLatencies.size());
+//		vector<SpikeCount> & latencyDependentSpikeCount = latencyDependentSpikeCountsInCurrentWindow[ni][thePatternID];
+//		latencyDependentSpikeCount.clear();
+//		latencyDependentSpikeCount.resize(latencyDependentSpikeCountLatencies.size());
 
 		//spikeCountInCurrentWindow[ni][thePatternID].push_back(theSpikeTimes.size());
 
+		//cout << "Spiketimes (length: " <<  theSpikeTimes.size()  << "): ";
 		bool truepositive = false;
 		bool falsepositive = false;
 		for (AurynTime theSpiketime : theSpikeTimes)
@@ -227,26 +215,63 @@ void SpikeResponseMonitor::computeSpikeStatistics(PatternID thePatternID)
 			if (theSpiketime < givenTPmaxtime) truepositive = true;
 			if (theSpiketime > givenFPmintime) falsepositive = true;
 
-			// track latency-dependent firing rates:
-			bool previouslyAssigned = false; // works like an else if, but compatible with the loop below!
-			for (int li = 0; li < latencyDependentSpikeCountLatencies.size(); ++li)
-				if ( (theSpiketime < latencyDependentSpikeCountLatencies[li]) && (!previouslyAssigned) )
-					latencyDependentSpikeCount[li]++;
+			//cout << theSpiketime << " " << endl;
+//			// track latency-dependent firing rates:
+//			bool previouslyAssigned = false; // works like an else if, but compatible with the loop below!
+//			for (int li = 0; li < latencyDependentSpikeCountLatencies.size(); ++li)
+//				if ( (theSpiketime < latencyDependentSpikeCountLatencies[li]) && (!previouslyAssigned) )
+//					latencyDependentSpikeCount[li]++;
 		}
+		//cout << endl;
 		if (truepositive)   truepositivesInCurrentTrackingWindow[ni][thePatternID]++;
 		if (falsepositive) falsepositivesInCurrentTrackingWindow[ni][thePatternID]++;
 
+		// reset single pattern responses because we have now dealt with them.
+		singlePatternResponses[ni][thePatternID].clear();
 	}
 
 }
 
 
+void SpikeResponseMonitor::computeMultiPatternStatistics(PatternID thePatternID)
+{
+	// TODO: use the responseTrackers to find peaks of spike responses within the last X pattern presentations!
+
+	const unsigned int &numPatternPresentations = patternPresentationsInCurrentTrackingWindow[thePatternID];
+
+	for (int ni = 0; ni < truepositivesInCurrentTrackingWindow.size(); ++ni)
+	{
+		//cout << "numPatternPresentations: " << numPatternPresentations;
+		//cout << ", TP: " <<  truepositivesInCurrentTrackingWindow[ni][thePatternID];
+		//bv cout << ", FP: " << falsepositivesInCurrentTrackingWindow[ni][thePatternID];
+
+		float tpr = ( (float)truepositivesInCurrentTrackingWindow[ni][thePatternID] / (float)numPatternPresentations );
+		float fpr = ( (float)falsepositivesInCurrentTrackingWindow[ni][thePatternID] / (float)numPatternPresentations );
+
+		//cout << setprecision(4);
+		//cout << "  True positive rate: " << tpr << ", " << "False positive rate: " << fpr << ". " << endl;
+
+		outfile << tpr << " "  << fpr << " "  << tpr/fpr << " " << endl;
+	}
+
+}
+
+
+void SpikeResponseMonitor::resetMultiPatternData(PatternID thePatternID)
+{
+	patternPresentationsInCurrentTrackingWindow[thePatternID] = 0;
+
+	// clear temp data (hope this does not hurt performence too much)
+	for (int ni = 0; ni < truepositivesInCurrentTrackingWindow.size(); ++ni)
+	{
+		truepositivesInCurrentTrackingWindow[ni][thePatternID] = 0;
+		falsepositivesInCurrentTrackingWindow[ni][thePatternID] = 0;
+	}
+}
 
 
 
-//void SpikeResponseMonitor::resetTracker()
-//{
-//}
+
 
 
 
