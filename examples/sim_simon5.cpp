@@ -175,7 +175,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 	try
 	{
 
-		NeuronID Npre = simparams.get<int>("neurongroups.inputs.N");
+		NeuronID Npre = simparams.get<unsigned int>("neurongroups.inputs.N");
 		string requestedNeuronGroupClass = simparams.get<string>("neurongroups.inputs.type");
 		cout << "The requested input group is: " << requestedNeuronGroupClass << endl;
 		if ("PoissonGroup" == requestedNeuronGroupClass)
@@ -342,7 +342,7 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 		AurynFloat A_minus = simparams.get<float>("connectionsets.con1.stdprule.A_minus");
 		AurynFloat tau_pre = simparams.get<float>("connectionsets.con1.stdprule.tau_plus");
 		AurynFloat tau_post = simparams.get<float>("connectionsets.con1.stdprule.tau_minus");
-		AurynFloat maxweight = 1.;
+		AurynFloat maxweight = simparams.get<float>("connectionsets.con1.maximumweight"); //1.0f;
 		TransmitterType transmitter = GLUT;
 
 		bool useNewSTDP = false;
@@ -381,168 +381,160 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron,
 								  DuplexConnection *con1, const boost::property_tree::ptree &simparams)
 {
-	try
+	string tmpstr;
+
+
+	// END Connections & settings.
+	// BEGIN History setup (writing to disk):
+	auryn_vector_float* starttimes = auryn_vector_float_alloc(100);
+	auryn_vector_float* stoptimes = auryn_vector_float_alloc(100);
+	stringstream ssStart(simparams.get<string>("recordings.dtintervalsAsStrings.starttimes"));
+	stringstream ssStop(simparams.get<string>("recordings.dtintervalsAsStrings.stoptimes"));
+	string buf1, buf2;
+	int counter = 0;
+	while (ssStart >> buf1)
 	{
-		// END Connections & settings.
-		// BEGIN History setup (writing to disk):
-		auryn_vector_float* starttimes = auryn_vector_float_alloc(100);
-		auryn_vector_float* stoptimes = auryn_vector_float_alloc(100);
-		stringstream ssStart(simparams.get<string>("recordings.dtintervalsAsStrings.starttimes"));
-		stringstream ssStop(simparams.get<string>("recordings.dtintervalsAsStrings.stoptimes"));
-		string buf1, buf2;
-		int counter = 0;
-		while (ssStart >> buf1)
-		{
-			ssStop >> buf2;
-			starttimes->data[counter] = (AurynFloat) (stof(buf1));
-			stoptimes->data[counter] = (AurynFloat) (stof(buf2));
-			++counter;
-			cout << "Reading in starttime: " << buf1 << " ...and Stoptime: " << buf2
-			<< endl;
-		}
-		starttimes->size = counter;
-		stoptimes->size = counter;
-
-
-		string tmpstr;
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_inputs.ras";
-		SpikeMonitor* smon_in = new SpikeMonitor(poisson, tmpstr.c_str());
-		smon_in->set_recording_times(starttimes, stoptimes);
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_inputs.spk";
-		BinarySpikeMonitor* binsmon_in = new BinarySpikeMonitor(poisson, tmpstr.c_str());
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_inputs.poprate";
-		PopulationRateMonitor* rmon_in = new PopulationRateMonitor(poisson,
-																   tmpstr.c_str(),
-																   getSamplinginterval(simparams,
-																					   "recordings.inputs.samplinginterval_poprate"));
-
-
-
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_outputs.ras";
-		SpikeMonitor* smon_out = new SpikeMonitor(detector_neuron, tmpstr.c_str());
-		smon_out->set_recording_times(starttimes, stoptimes);
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_outputs.spk";
-		BinarySpikeMonitor* binsmon_out = new BinarySpikeMonitor(detector_neuron, tmpstr.c_str());
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += "_outputs.rate";
-		RateMonitor* rmon_out = new RateMonitor(detector_neuron, tmpstr.c_str(),
-												getSamplinginterval(simparams,
-																	"recordings.outputs.samplinginterval_rate"));
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".mem";
-		VoltageMonitor* vmon = new VoltageMonitor(detector_neuron, 0, tmpstr.c_str(), getSamplinginterval(simparams, "recordings.outputs.samplinginterval_membranes"));
-		vmon->set_recording_times(starttimes, stoptimes);
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".ampa";
-		AmpaMonitor* amon = new AmpaMonitor(detector_neuron, 0, tmpstr.c_str(),
-					(AurynTime)(getSamplinginterval(simparams, "recordings.outputs.samplinginterval_ampa") / (float)dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
-		amon->set_recording_times(starttimes, stoptimes);
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".nmda";
-		NmdaMonitor* nmon = new NmdaMonitor(detector_neuron, 0, tmpstr.c_str(),
-					(AurynTime)(getSamplinginterval(simparams, "recordings.outputs.samplinginterval_nmda") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
-		nmon->set_recording_times(starttimes, stoptimes);
-
-
-
-
-
-		//tmpstr = simparams.get<string>("general.outfileprefix");
-		//tmpstr += ".testing";
-		//TestingMonitor * tmon = new TestingMonitor( tmpstr.c_str() ); // divide by dt because constructor interfaces are not (yet) normed across classes.
-		//tmon->set_recording_times(starttimes,stoptimes);
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".izhi";
-		IzhiMonitor* izhmon = new IzhiMonitor((Izhikevich2003Group*)detector_neuron, 0, tmpstr.c_str(),
-					  (AurynTime)(getSamplinginterval(simparams,"recordings.outputs.samplinginterval_ampa") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
-		izhmon->set_recording_times(starttimes, stoptimes);
-
-
-
-
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".weightsum";
-		WeightSumMonitor* weightsum = new WeightSumMonitor(con1, tmpstr.c_str(),
-														   getSamplinginterval(simparams,
-																			   "recordings.con1.samplinginterval_weightsum"));
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".weightstats";
-		WeightStatsMonitor* weightstats = new WeightStatsMonitor(con1,
-																 tmpstr.c_str(),
-																 getSamplinginterval(simparams,
-																					 "recordings.con1.samplinginterval_weightstats"));
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".weightmatrix";
-		WeightMatrixMonitor* weightmatrix = new WeightMatrixMonitor(con1,tmpstr.c_str(),
-																	getSamplinginterval(simparams,"recordings.con1.samplinginterval_weightmatrix"));
-
-
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".stimulusdetectionstatistics.txt";
-		int numTrackedNeurons = 1;
-		SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
-
+		ssStop >> buf2;
+		starttimes->data[counter] = (AurynFloat) (stof(buf1));
+		stoptimes->data[counter] = (AurynFloat) (stof(buf2));
+		++counter;
+		cout << "Reading in starttime: " << buf1 << " ...and Stoptime: " << buf2
+		<< endl;
 	}
-	catch(exception& e) {
-		cerr << "error: " << e.what() << "\n";
-		std::exit(1);
-	}
-	catch(...) {
-		cerr << "Exception of unknown type!\n";
-		std::exit(1);
-	}
+	starttimes->size = counter;
+	stoptimes->size = counter;
+
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_inputs.ras";
+	SpikeMonitor* smon_in = new SpikeMonitor(poisson, tmpstr.c_str());
+	smon_in->set_recording_times(starttimes, stoptimes);
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_inputs.spk";
+	BinarySpikeMonitor* binsmon_in = new BinarySpikeMonitor(poisson, tmpstr.c_str());
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_inputs.poprate";
+	PopulationRateMonitor* rmon_in = new PopulationRateMonitor(poisson,
+															   tmpstr.c_str(),
+															   getSamplinginterval(simparams,
+																				   "recordings.inputs.samplinginterval_poprate"));
+
+
+
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_outputs.ras";
+	SpikeMonitor* smon_out = new SpikeMonitor(detector_neuron, tmpstr.c_str());
+	smon_out->set_recording_times(starttimes, stoptimes);
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_outputs.spk";
+	BinarySpikeMonitor* binsmon_out = new BinarySpikeMonitor(detector_neuron, tmpstr.c_str());
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += "_outputs.rate";
+	RateMonitor* rmon_out = new RateMonitor(detector_neuron, tmpstr.c_str(),
+											getSamplinginterval(simparams,
+																"recordings.outputs.samplinginterval_rate"));
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".mem";
+	VoltageMonitor* vmon = new VoltageMonitor(detector_neuron, 0, tmpstr.c_str(), getSamplinginterval(simparams, "recordings.outputs.samplinginterval_membranes"));
+	vmon->set_recording_times(starttimes, stoptimes);
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".ampa";
+	AmpaMonitor* amon = new AmpaMonitor(detector_neuron, 0, tmpstr.c_str(),
+				(AurynTime)(getSamplinginterval(simparams, "recordings.outputs.samplinginterval_ampa") / (float)dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
+	amon->set_recording_times(starttimes, stoptimes);
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".nmda";
+	NmdaMonitor* nmon = new NmdaMonitor(detector_neuron, 0, tmpstr.c_str(),
+				(AurynTime)(getSamplinginterval(simparams, "recordings.outputs.samplinginterval_nmda") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
+	nmon->set_recording_times(starttimes, stoptimes);
+
+
+
+
+
+	//tmpstr = simparams.get<string>("general.outfileprefix");
+	//tmpstr += ".testing";
+	//TestingMonitor * tmon = new TestingMonitor( tmpstr.c_str() ); // divide by dt because constructor interfaces are not (yet) normed across classes.
+	//tmon->set_recording_times(starttimes,stoptimes);
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".izhi";
+	IzhiMonitor* izhmon = new IzhiMonitor((Izhikevich2003Group*)detector_neuron, 0, tmpstr.c_str(),
+				  (AurynTime)(getSamplinginterval(simparams,"recordings.outputs.samplinginterval_ampa") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
+	izhmon->set_recording_times(starttimes, stoptimes);
+
+
+
+
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".weightsum";
+	WeightSumMonitor* weightsum = new WeightSumMonitor(con1, tmpstr.c_str(),
+													   getSamplinginterval(simparams,
+																		   "recordings.con1.samplinginterval_weightsum"));
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".weightstats";
+	WeightStatsMonitor* weightstats = new WeightStatsMonitor(con1,
+															 tmpstr.c_str(),
+															 getSamplinginterval(simparams,
+																				 "recordings.con1.samplinginterval_weightstats"));
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".weightmatrix";
+	WeightMatrixMonitor* weightmatrix = new WeightMatrixMonitor(con1,tmpstr.c_str(),
+																getSamplinginterval(simparams,"recordings.con1.samplinginterval_weightmatrix"));
+
+
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".stimulusdetectionstatistics.txt";
+	int numTrackedNeurons = 1;
+	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+
 
 
 }
 
-void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron,
-								 DuplexConnection *con1, const boost::property_tree::ptree &simparams)
+void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron, DuplexConnection *con1, const boost::property_tree::ptree &simparams)
 {
-	try
-	{
-		string tmpstr;
+	string tmpstr;
 
-		tmpstr = simparams.get<string>("general.outfileprefix");
-		tmpstr += ".stimulusdetectionstatistics.txt";
-		int numTrackedNeurons = 1;
-		SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
-	}
-	catch(exception& e) {
-		cerr << "error: " << e.what() << "\n";
-		std::exit(1);
-	}
-	catch(...) {
-		cerr << "Exception of unknown type!\n";
-		std::exit(1);
-	}
+	tmpstr = simparams.get<string>("general.outfileprefix");
+	tmpstr += ".stimulusdetectionstatistics.txt";
+	int numTrackedNeurons = 1;
+	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+}
 
 
+void setupHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron, DuplexConnection *con1, const boost::property_tree::ptree &simparams)
+{
+	bool useDetailedTracking; // system will exit on error, so no default declaration needed.
+
+	try {useDetailedTracking = simparams.get<bool>("recordings.detailedtracking");}
+	catch(exception& e) { cerr << "error: " << e.what() << "\n"; std::exit(1); }
+	catch(...) { cerr << "Exception of unknown type!\n"; std::exit(1); }
+
+	if (useDetailedTracking)
+		setupDetailedHistoryTracking(poisson, detector_neuron, con1, simparams);
+	else
+		setupReducedHistoryTracking(poisson, detector_neuron, con1, simparams);
 }
 
 void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams)
@@ -605,8 +597,7 @@ int main(int ac, char* av[])
 
 
 	// BEGIN History setup (writing to disk):
-	//setupDetailedHistoryTracking(poisson, detector_neuron, con1, simparams);
-	setupReducedHistoryTracking(poisson, detector_neuron, con1, simparams);
+	setupHistoryTracking(poisson, detector_neuron, con1, simparams);
 	// END History setup (writing to disk).
 
 
