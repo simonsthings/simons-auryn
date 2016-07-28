@@ -22,7 +22,7 @@
 #include "../src/System.h"
 #include <ctime>
 #include <boost/property_tree/json_parser.hpp>
-#include <SpikeResponseMonitor.h>
+#include <StimulusResponseMonitor.h>
 
 using namespace std;
 
@@ -506,7 +506,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
 
 
 
@@ -519,7 +519,7 @@ void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_ne
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
 }
 
 

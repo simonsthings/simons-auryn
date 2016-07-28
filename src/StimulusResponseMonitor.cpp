@@ -1,7 +1,7 @@
 
-#include <SpikeResponseMonitor.h>
+#include <StimulusResponseMonitor.h>
 
-SpikeResponseMonitor::SpikeResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
+StimulusResponseMonitor::StimulusResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
 										   int trackFirstNeurons, string filename,
 										   AurynTime binsize)
 		: Monitor(filename)
@@ -9,11 +9,11 @@ SpikeResponseMonitor::SpikeResponseMonitor(PolychronousPoissonGroup *spikepatter
 	init(spikepatternprovider, responder, trackFirstNeurons, filename, binsize);
 }
 
-SpikeResponseMonitor::~SpikeResponseMonitor()
+StimulusResponseMonitor::~StimulusResponseMonitor()
 {
 }
 
-void SpikeResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovider, NeuronGroup *theResponder,
+void StimulusResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovider, NeuronGroup *theResponder,
 								int trackFirstNeurons, string filename, AurynTime binsize)
 {
 	sys->register_monitor(this);
@@ -74,7 +74,7 @@ void SpikeResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovide
 }
 
 
-void SpikeResponseMonitor::propagate()
+void StimulusResponseMonitor::propagate()
 {
 	const vector<PatternID> &anyPatterns = spikepatternprovider->get_stimuli_immediate();
 	//SpikeContainer* anyResponses = responder->get_spikes_immediate();
@@ -156,7 +156,7 @@ void SpikeResponseMonitor::propagate()
 }
 
 
-void SpikeResponseMonitor::displaySpikeCounts()
+void StimulusResponseMonitor::displaySpikeCounts()
 {
 	//cout << "Displaying spike counts!" << endl;
 	for (auto iter = responseTrackers.begin() ; iter != responseTrackers.end() ; ++iter)
@@ -179,11 +179,11 @@ void SpikeResponseMonitor::displaySpikeCounts()
 	}
 }
 
-void SpikeResponseMonitor::computePerPatternStatistics(PatternID thePatternID)
+void StimulusResponseMonitor::computePerPatternStatistics(PatternID thePatternID)
 {
 	// TODO: use data on single-pattern responses to find out typical number of responses and false-positive rates etc.
 
-	AurynTime givenTPmaxtime = (AurynTime)  (20.0 *1e-3/dt); // e.g. 50 ms/dt
+	AurynTime givenTPmaxtime = (AurynTime)  (50.0 *1e-3/dt); // e.g. 50 ms/dt
 	AurynTime givenFPmintime = (AurynTime) (150.0 *1e-3/dt); // e.g. 150 ms/dt
 
 //	vector<AurynTime> latencyDependentSpikeCountLatencies;
@@ -233,7 +233,7 @@ void SpikeResponseMonitor::computePerPatternStatistics(PatternID thePatternID)
 }
 
 
-void SpikeResponseMonitor::computeMultiPatternStatistics(PatternID thePatternID)
+void StimulusResponseMonitor::computeMultiPatternStatistics(PatternID thePatternID)
 {
 	// TODO: use the responseTrackers to find peaks of spike responses within the last X pattern presentations!
 
@@ -257,7 +257,7 @@ void SpikeResponseMonitor::computeMultiPatternStatistics(PatternID thePatternID)
 }
 
 
-void SpikeResponseMonitor::resetMultiPatternData(PatternID thePatternID)
+void StimulusResponseMonitor::resetMultiPatternData(PatternID thePatternID)
 {
 	patternPresentationsInCurrentTrackingWindow[thePatternID] = 0;
 

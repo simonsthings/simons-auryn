@@ -1,5 +1,4 @@
 /* 
-* Copyright 2016 Simon Vogt
 *
 * This file is based on the Auryn example files, a simulation package for plastic
 * spiking neural networks.
@@ -22,7 +21,7 @@
 #include "../src/System.h"
 #include <ctime>
 #include <boost/property_tree/json_parser.hpp>
-#include <SpikeResponseMonitor.h>
+#include <StimulusResponseMonitor.h>
 
 using namespace std;
 
@@ -175,7 +174,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 	try
 	{
 
-		NeuronID Npre = simparams.get<unsigned int>("neurongroups.inputs.N");
+		NeuronID Npre = simparams.get<NeuronID>("neurongroups.inputs.N");
 		string requestedNeuronGroupClass = simparams.get<string>("neurongroups.inputs.type");
 		cout << "The requested input group is: " << requestedNeuronGroupClass << endl;
 		if ("PoissonGroup" == requestedNeuronGroupClass)
@@ -202,8 +201,8 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		}
 		else if ("PolychronousPoissonGroup" == requestedNeuronGroupClass)
 		{
-			NeuronID Npre_presenting = simparams.get<int>("neurongroups.inputs.N_presenting");
-			NeuronID Npre_subpresenting = simparams.get<int>("neurongroups.inputs.N_subpresenting");
+			NeuronID Npre_presenting = simparams.get<NeuronID>("neurongroups.inputs.N_presenting");
+			NeuronID Npre_subpresenting = simparams.get<NeuronID>("neurongroups.inputs.N_subpresenting");
 			AurynDouble patDuration = simparams.get<double>("neurongroups.inputs.patternduration");
 			AurynDouble patInterval = simparams.get<double>("neurongroups.inputs.patterninterval");
 			AurynDouble numStimuli = simparams.get<double>("neurongroups.inputs.numberofstimuli");
@@ -240,7 +239,7 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
 	{
 
 
-		NeuronID N_post = simparams.get<int>("neurongroups.outputs.N");
+		NeuronID N_post = simparams.get<NeuronID>("neurongroups.outputs.N");
 		Izhikevich2003Group* detector_neuron = new Izhikevich2003Group(N_post);
 		detector_neuron->set_projMult( simparams.get<float>("neurongroups.outputs.projMult") );
 		detector_neuron->use_recovery = simparams.get<bool>("neurongroups.outputs.userecovery");
@@ -391,7 +390,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	stringstream ssStart(simparams.get<string>("recordings.dtintervalsAsStrings.starttimes"));
 	stringstream ssStop(simparams.get<string>("recordings.dtintervalsAsStrings.stoptimes"));
 	string buf1, buf2;
-	int counter = 0;
+	unsigned int counter = 0;
 	while (ssStart >> buf1)
 	{
 		ssStop >> buf2;
@@ -506,7 +505,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
 
 
 
@@ -519,7 +518,7 @@ void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_ne
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	SpikeResponseMonitor* srm = new SpikeResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
 }
 
 

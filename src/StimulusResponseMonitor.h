@@ -24,12 +24,12 @@ typedef unordered_map<AurynTime,SpikeCount> LatencyContainer;
  * - (mean) number of response spikes per pattern presentation over the last X timebins
  * - median delay for 1st, 2nd, 3rd, etc response spike
  * - speed of delay change for each peak (as a measure of response timing stability)
- * - mean firing rates of the responding neuron during eary and late pattern presentation, and during noise intervals
+ * - mean firing rates of the responding neuron during early and late pattern presentation, and during noise intervals
  * - response reliability:
  * -- yes/no to pattern presentation
  * --
  **/
-class SpikeResponseMonitor : public Monitor
+class StimulusResponseMonitor : public Monitor
 {
 protected:
 	int numTrackedResponseNeurons; // delete this?
@@ -54,9 +54,9 @@ protected:
 			  int trackedResponseNeurons, string filename, AurynTime binsize);
 
 public:
-	SpikeResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
+	StimulusResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
 						 int trackFirstNeurons, string filename, AurynTime binsize);
-	virtual ~SpikeResponseMonitor();
+	virtual ~StimulusResponseMonitor();
 
 	virtual void propagate() override;
 	void displaySpikeCounts();
