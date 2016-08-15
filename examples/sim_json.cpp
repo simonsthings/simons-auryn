@@ -32,7 +32,7 @@ void defineDefaultParameters(boost::property_tree::ptree const& pt);
 void print(boost::property_tree::ptree const& pt, string indent );
 float getSamplinginterval(boost::property_tree::ptree const& pt, string path);
 void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tree::ptree & simparams);
-void setupHistoryTracking(SpikingGroup* poisson, NeuronGroup* detector_neuron, STDPConnection* con1, const boost::property_tree::ptree& simparams);
+//void setupHistoryTracking(SpikingGroup* poisson, NeuronGroup* detector_neuron, STDPConnection* con1, const boost::property_tree::ptree& simparams);
 SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams);
 NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams);
 DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_neuron, const boost::property_tree::ptree& simparams);
@@ -167,6 +167,15 @@ void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tr
 
 }
 
+template <typename T>
+std::vector<T> as_vector(boost::property_tree::ptree const& pt, boost::property_tree::ptree::key_type const& key)
+{
+	std::vector<T> r;
+	for (auto& item : pt.get_child(key))
+		r.push_back(item.second.get_value<T>());
+	return r;
+}
+
 SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams)
 {
 	SpikingGroup* poisson;
@@ -191,9 +200,9 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		}
 		else if ("StructuredPoissonGroup" == requestedNeuronGroupClass)
 		{
-			AurynDouble patDuration = simparams.get<double>("neurongroups.inputs.patternduration");
-			AurynDouble patInterval = simparams.get<double>("neurongroups.inputs.patterninterval");
-			AurynDouble numStimuli = simparams.get<double>("neurongroups.inputs.numberofstimuli");
+			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups.inputs.patternduration");
+			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups.inputs.patterninterval");
+			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups.inputs.numberofstimuli");
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
 			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
 			poisson = new StructuredPoissonGroup(Npre, patDuration, patInterval, numStimuli, inputpoprate, patOccurrencesFilename);
@@ -203,14 +212,30 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		{
 			NeuronID Npre_presenting = simparams.get<NeuronID>("neurongroups.inputs.N_presenting");
 			NeuronID Npre_subpresenting = simparams.get<NeuronID>("neurongroups.inputs.N_subpresenting");
-			AurynDouble patDuration = simparams.get<double>("neurongroups.inputs.patternduration");
-			AurynDouble patInterval = simparams.get<double>("neurongroups.inputs.patterninterval");
-			AurynDouble numStimuli = simparams.get<double>("neurongroups.inputs.numberofstimuli");
+			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups.inputs.patternduration");
+			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups.inputs.patterninterval");
+			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups.inputs.numberofstimuli");
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
 			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
 			poisson = new PolychronousPoissonGroup(Npre, Npre_presenting, Npre_subpresenting, patDuration, patInterval, numStimuli, inputpoprate,
 					patOccurrencesFilename);
 			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<int>("neurongroups.inputs.randomseed"));
+
+
+			for (auto i : as_vector<AurynFloat>(simparams, "general.testingProtocol.durations")) std::cout << i << ' ';
+			std::cout << '\n';
+			for (auto j : as_vector<AurynFloat>(simparams, "general.testingProtocol.intervals")) std::cout << j << ' ';
+
+
+			vector<AurynFloat> testprotocolDurations = as_vector<AurynFloat>(simparams, "general.testingProtocol.durations");
+			//testprotocolDurations.push_back(30);
+			//testprotocolDurations.push_back(30);
+			//testprotocolDurations.push_back(simparams.get<AurynFloat>("general.simtime")-60);
+			vector<AurynFloat> testprotocolPatternintervals = as_vector<AurynFloat>(simparams, "general.testingProtocol.intervals");
+			//testprotocolPatternintervals.push_back(0.3);   // negative values indicate noise only.
+			//testprotocolPatternintervals.push_back(0.2);  // in seconds.
+			//testprotocolPatternintervals.push_back(10.0); // in seconds.
+			((PolychronousPoissonGroup*) (poisson))->setTestingProtocol(testprotocolDurations,testprotocolPatternintervals);
 		}
 		else
 		{
@@ -403,6 +428,9 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	starttimes->size = counter;
 	stoptimes->size = counter;
 
+	// TODO: actually use this instead of the parsed strings above:
+	vector<AurynFloat> theStarttimes = as_vector<AurynFloat>(simparams, "recordings.dtintervalsAsFloats.starttimes");
+	vector<AurynFloat> theStoptimes  = as_vector<AurynFloat>(simparams, "recordings.dtintervalsAsFloats.stoptimes");
 
 
 	tmpstr = simparams.get<string>("general.outfileprefix");
@@ -505,7 +533,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, 50, 0, 0);
 
 
 
@@ -518,7 +546,7 @@ void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_ne
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, 50, 0, 0);
 }
 
 

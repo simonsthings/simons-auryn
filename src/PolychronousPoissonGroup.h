@@ -35,21 +35,6 @@ private:
     boost::random::mt19937 poly_gen;
     boost::random::uniform_real_distribution<> float_dist;
 
-
-	//NeuronID& N_total; // rename the size var for internal use
-	NeuronID N_presenting;
-	NeuronID N_subpresenting;
-
-	bool twoLegged;	// should synchain-like patterns be one long chain (twoLegged=false) or more like a double-sided wave?
-	bool useRandomPermutations; // or should patterns be random permutations of firing order?
-	AurynFloat participationProbability; // to further hide patterns in background data
-	NeuronID numPatterns;	// total number of distinct patterns (=stimuli)
-	AurynTime patternDuration;	// may vary during runtime, if implemented
-	AurynTime patternInterval;	// may vary during runtime, if implemented
-	AurynTime max_patternDuration;	// fixed buffer size
-
-	AurynTime max_patternInterval;	// fixed buffer size
-
 	vector<PermutableSpiketrainBuffer> buffers; // we want multiple buffers, so that one can be read from, one can be ready, and possibly a third could be receiving "live" data from another thread (in the future).
 	unsigned int current_read_buffer;
 	unsigned int current_write_buffer;
@@ -77,6 +62,12 @@ private:
 	void initBuffers(int delaysteps);
 	void generateNoiseAhead(PermutableSpiketrainBuffer* buffer, AurynTime steps);
 
+	void checkAndUpdateTestingProtocol();
+
+	vector<AurynFloat> testprotocolDurations;
+	vector<AurynFloat> testprotocolPatternintervals;
+	AurynTime next_phase_clock;
+	int next_phase_id;
 
 
 protected:
@@ -87,6 +78,23 @@ protected:
 	virtual void argsort(vector<AurynTime>* unorderedLatencies, SpikeContainer* orderingIndices);
 
 public:
+
+	//NeuronID& N_total; // rename the size var for internal use
+	NeuronID N_presenting;
+	NeuronID N_subpresenting;
+
+	bool twoLegged;	// should synchain-like patterns be one long chain (twoLegged=false) or more like a double-sided wave?
+	bool useRandomPermutations; // or should patterns be random permutations of firing order?
+	AurynFloat participationProbability; // to further hide patterns in background data
+	NeuronID numPatterns;	// total number of distinct patterns (=stimuli)
+	AurynTime patternDuration;	// may vary during runtime, if implemented
+	AurynTime patternInterval;	// may vary during runtime, if implemented
+	AurynTime max_patternDuration;	// fixed buffer size
+
+	AurynTime max_patternInterval;	// fixed buffer size
+
+
+
 	PolychronousPoissonGroup(NeuronID N_total, NeuronID N_presenting, NeuronID N_subpresenting,
 			AurynFloat duration, AurynFloat interval, NeuronID num_stimuli = 1,  AurynDouble rate=5. ,
 			string outputfilename = "stimulus.dat" );
@@ -111,6 +119,8 @@ public:
 	public:
 		bool operator()(const int& a, const int& b) const { return (*_values)[a] < (*_values)[b]; }
 	};
+
+	void setTestingProtocol(vector<AurynFloat> testprotocolDurations, vector<AurynFloat> testprotocolPatternintervals);
 
 };
 

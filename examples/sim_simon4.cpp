@@ -506,7 +506,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 		tmpstr = simparams.get<string>("general.outfileprefix");
 		tmpstr += ".stimulusdetectionstatistics.txt";
 		int numTrackedNeurons = 1;
-		StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+		StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, 1 / dt, 0, 0);
 
 	}
 	catch(exception& e) {
@@ -531,7 +531,7 @@ void setupReducedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_ne
 		tmpstr = simparams.get<string>("general.outfileprefix");
 		tmpstr += ".stimulusdetectionstatistics.txt";
 		int numTrackedNeurons = 1;
-		StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, numTrackedNeurons, tmpstr, 1 / dt);
+		StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, 1 / dt, 0, 0);
 	}
 	catch(exception& e) {
 		cerr << "error: " << e.what() << "\n";

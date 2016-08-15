@@ -363,6 +363,8 @@ void PolychronousPoissonGroup::evolve()
 		push_spike(spike);
 	}
 
+
+	checkAndUpdateTestingProtocol();
 }
 
 
@@ -397,6 +399,67 @@ void PolychronousPoissonGroup::setMaxPatternInterval(AurynTime max_patternInterv
 {
 	PolychronousPoissonGroup::max_patternInterval = max_patternInterval;
 }
+
+void PolychronousPoissonGroup::setTestingProtocol(vector<AurynFloat> theTestprotocolDurations, vector<AurynFloat> theTestprotocolPatternintervals)
+{
+	testprotocolDurations = theTestprotocolDurations;
+	testprotocolPatternintervals = theTestprotocolPatternintervals;
+
+	// assumes that testprotocolDurations contains at least one element. Todo: ensure testprotocolDurations always contains at least one element!
+	next_phase_id = 0;
+	patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / dt);
+	next_phase_clock = (AurynTime)(testprotocolDurations[next_phase_id] / dt);
+}
+
+/**
+ * Shift through the predefined phases of the testing protocol by adjusting the patternInterval accordingly.
+ *
+ * Note: As long as the total simulation time is the summation of all testprotocolDurations, this should not run into problems:
+ * next_phase_id will then always be smaller than the length of testprotocolDurations.
+ */
+void PolychronousPoissonGroup::checkAndUpdateTestingProtocol()
+{
+
+	if ( sys->get_clock() > next_phase_clock )
+	{
+		next_phase_id++;
+		patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / dt);
+		next_phase_clock += (AurynTime)(testprotocolDurations[next_phase_id] / dt);
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
