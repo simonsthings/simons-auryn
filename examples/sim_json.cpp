@@ -369,24 +369,38 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 		AurynFloat maxweight = simparams.get<float>("connectionsets.con1.maximumweight"); //1.0f;
 		TransmitterType transmitter = GLUT;
 
-		bool useNewSTDP = false;
-		if (useNewSTDP)
+		int STDPruleID = 1;
+
+		switch (STDPruleID)
 		{
-			STDPlsConnection* theConn = new STDPlsConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
-			//con1->set_alphalambda_alternative(A_plus,A_minus,learningrate);
-			//con1->set_mu_plus(0.0);
-			//con1->set_mu_minus(0.0);
-			con1 = theConn;
-		}
-		else
-		{
-			STDPConnection* theConn = new STDPConnection(poisson, detector_neuron, weight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
-			//STDPConnection* con1 = new STDPConnection(poisson, detector_neuron,GLUT);
-			//con1->A *= -0.85;
-			double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
-			theConn->A *= A_minus;// *dt/ms;
-			theConn->B *= A_plus;// *dt/ms;
-			con1 = theConn;
+			case 0:
+			{
+				STDPConnection* theConn = new STDPConnection(poisson, detector_neuron, weight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
+				double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
+				theConn->A *= A_minus;// *dt/ms;
+				theConn->B *= A_plus;// *dt/ms;
+				con1 = theConn;
+			};break;
+			case 1:
+			{
+				STDPwdConnection* theConn = new STDPwdConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
+				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
+				theConn->set_mu_plus(1.0);
+				theConn->set_mu_minus(1.0);
+				con1 = theConn;
+			};break;
+			case 2:
+			{
+				STDPlsConnection* theConn = new STDPlsConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
+				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
+				//theConn->set_mu_plus(0.0);
+				//theConn->set_mu_minus(0.0);
+				con1 = theConn;
+			};break;
+			default:
+			{
+				throw std::invalid_argument( "received invalid STDPruleID." );
+			};break;
 		}
 
 	}
