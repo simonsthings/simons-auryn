@@ -1,5 +1,5 @@
 /* 
-* Copyright 2014 Friedemann Zenke
+* Copyright 2014-2016 Friedemann Zenke
 *
 * This file is part of Auryn, a simulation package for plastic
 * spiking neural networks.
@@ -18,12 +18,32 @@
 * along with Auryn.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*!\file 
+ *
+ * \brief Simulation code for the Vogels Abbott benchmark following Brette et al. (2007)
+ *
+ * This simulation implements the Vogels Abbott benchmark as suggested by
+ * Brette et al. (2007) Journal of Computational Neuroscience 23: 349-398. 
+ *
+ * The network is based on a network by Vogels and Abbott as described in 
+ * Vogels, T.P., and Abbott, L.F. (2005).  Signal propagation and logic gating
+ * in networks of integrate-and-fire neurons. J Neurosci 25, 10786.
+ *
+ * We used this network for benchmarking Auryn against other simulators in
+ * Zenke, F., and Gerstner, W. (2014). Limits to high-speed simulations of
+ * spiking neural networks using general-purpose computers. Front Neuroinform
+ * 8, 76.
+ *
+ * See build/release/run_benchmark.sh for automatically run benchmarks to
+ * compare the performance of different Auryn builds.
+ *
+ * */
+
 #include "auryn.h"
 
-using namespace std;
+using namespace auryn;
 
 namespace po = boost::program_options;
-namespace mpi = boost::mpi;
 
 int main(int ac,char *av[]) {
 	string dir = "/tmp";
@@ -33,7 +53,7 @@ int main(int ac,char *av[]) {
 	string fwmat_ie = "";
 	string fwmat_ii = "";
 
-	stringstream oss;
+	std::stringstream oss;
 	string strbuf ;
 	string msg;
 
@@ -72,7 +92,7 @@ int main(int ac,char *av[]) {
         po::notify(vm);    
 
         if (vm.count("help")) {
-            cout << desc << "\n";
+            std::cout << desc << "\n";
             return 1;
         }
 
@@ -105,29 +125,20 @@ int main(int ac,char *av[]) {
         } 
 
     }
-    catch(exception& e) {
-        cerr << "error: " << e.what() << "\n";
+    catch(std::exception& e) {
+        std::cerr << "error: " << e.what() << "\n";
         return 1;
     }
     catch(...) {
-        cerr << "Exception of unknown type!\n";
+        std::cerr << "Exception of unknown type!\n";
     }
 
-	// BEGIN Global stuff
-	mpi::environment env(ac, av);
-	mpi::communicator world;
-	communicator = &world;
 
-	oss << dir  << "/coba." << world.rank() << ".";
+	auryn_init( ac, av, dir );
+	oss << dir  << "/coba." << sys->mpi_rank() << ".";
 	string outputfile = oss.str();
+	if ( fast ) sys->quiet = true;
 
-	char tmp [255];
-	stringstream logfile;
-	logfile << outputfile << "log";
-	logger = new Logger(logfile.str(),world.rank(),PROGRESS,EVERYTHING);
-
-	sys = new System(&world);
-	// END Global stuff
 
 	logger->msg("Setting up neuron groups ...",PROGRESS,true);
 
@@ -171,7 +182,7 @@ int main(int ac,char *av[]) {
 		msg = "Setting up monitors ...";
 		logger->msg(msg,PROGRESS,true);
 
-		stringstream filename;
+		std::stringstream filename;
 		filename << outputfile << "e.ras";
 		SpikeMonitor * smon_e = new SpikeMonitor( neurons_e, filename.str().c_str() );
 
@@ -188,11 +199,20 @@ int main(int ac,char *av[]) {
 	if (!sys->run(simtime,true)) 
 			errcode = 1;
 
-	logger->msg("Freeing ..." ,PROGRESS,true);
-	delete sys;
+	if ( sys->mpi_rank() == 0 ) {
+		logger->msg("Saving elapsed time ..." ,PROGRESS,true);
+		char filenamebuf [255];
+		sprintf(filenamebuf, "%s/elapsed.dat", dir.c_str());
+		std::ofstream timefile;
+		timefile.open(filenamebuf);
+		timefile << sys->get_last_elapsed_time() << std::endl;
+		timefile.close();
+	}
 
 	if (errcode)
-		env.abort(errcode);
+		auryn_abort(errcode);
 
+	logger->msg("Freeing ..." ,PROGRESS,true);
+	auryn_free();
 	return errcode;
 }
