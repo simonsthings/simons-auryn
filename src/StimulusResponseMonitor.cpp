@@ -1,6 +1,8 @@
 
 #include <StimulusResponseMonitor.h>
 
+using namespace auryn;
+
 StimulusResponseMonitor::StimulusResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder, string filename,
 												 AurynTime binsizeInPatternPresentations,
 												 NeuronID neuronToTrack, PatternID patternToTrack)
@@ -16,7 +18,7 @@ StimulusResponseMonitor::~StimulusResponseMonitor()
 void StimulusResponseMonitor::init(PolychronousPoissonGroup *theSpikepatternprovider, NeuronGroup *theResponder,
 								   NeuronID theNeuronToTrack, PatternID thePatternToTrack, PatternID binsizeInPatternPresentations)
 {
-	sys->register_monitor(this);
+	sys->register_device(this);
 
 	spikepatternprovider = theSpikepatternprovider;
 	responder = theResponder;
@@ -105,8 +107,8 @@ void StimulusResponseMonitor::computeHitsAndFalsealarms()
 {
 	// TODO: use data on single-pattern responses to find out typical number of responses and false-positive rates etc.
 
-	AurynTime givenTPmaxClock = (AurynTime)  (50.0 *1e-3/dt); // e.g. 50 ms/dt
-	AurynTime givenFPminClock = (AurynTime) (150.0 *1e-3/dt); // e.g. 150 ms/dt
+	AurynTime givenTPmaxClock = (AurynTime)  (50.0 *1e-3/auryn_timestep); // e.g. 50 ms/dt
+	AurynTime givenFPminClock = (AurynTime) (150.0 *1e-3/auryn_timestep); // e.g. 150 ms/dt
 
 //	vector<AurynTime> latencyDependentSpikeCountLatencies;
 //	latencyDependentSpikeCountLatencies.push_back( (AurynTime) 10.0 *1e-3/dt );

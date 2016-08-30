@@ -2,21 +2,23 @@
 #ifndef SPIKERESPONSEMONITOR_H_
 #define SPIKERESPONSEMONITOR_H_
 
-#include "auryn_definitions.h"
-#include "Monitor.h"
+#include "auryn/auryn_definitions.h"
+#include "auryn/Monitor.h"
 #include "TimespanMonitor.h"
 #include "PolychronousPoissonGroup.h"
-#include "System.h"
-#include "Connection.h"
+#include "auryn/System.h"
+#include "auryn/Connection.h"
 #include <fstream>
 #include <iomanip>
 #include <unordered_map>
 
 using namespace std;
 
-typedef unsigned int SpikeCount;
-typedef unsigned int PatternCount;
-typedef unordered_map<AurynTime,SpikeCount> LatencyContainer;
+namespace auryn
+{
+	typedef unsigned int SpikeCount;
+	typedef unsigned int PatternCount;
+	typedef unordered_map<AurynTime,SpikeCount> LatencyContainer;
 
 /*! \brief Records the response delays and other metrics of one specific unit
  * from a NeuronGroup in response to pattern presentation by a PolychronousPoissonGroup.
@@ -30,41 +32,44 @@ typedef unordered_map<AurynTime,SpikeCount> LatencyContainer;
  * -- yes/no to pattern presentation
  * --
  **/
-class StimulusResponseMonitor : public Monitor
-{
-protected:
-	PolychronousPoissonGroup* spikepatternprovider;		//!< Inputs
-	NeuronGroup* responder;								//!< Outputs
+	class StimulusResponseMonitor : public Monitor
+	{
+	protected:
+		PolychronousPoissonGroup* spikepatternprovider;		//!< Inputs
+		NeuronGroup* responder;								//!< Outputs
 
-	NeuronID neuronToTrack;		//!< Which Neuron to track with this instance of StimulusResponseMonitor.
-	PatternID patternToTrack;	//!< Which Pattern to track with this instance of StimulusResponseMonitor.
+		NeuronID neuronToTrack;		//!< Which Neuron to track with this instance of StimulusResponseMonitor.
+		PatternID patternToTrack;	//!< Which Pattern to track with this instance of StimulusResponseMonitor.
 
-	LatencyContainer responseTracker;  //!< Used to track all lags of all responses relative to each pattern onset. Will be used to compute response peaks.
-	AurynTime lastPatternArrivalClock;
+		LatencyContainer responseTracker;  //!< Used to track all lags of all responses relative to each pattern onset. Will be used to compute response peaks.
+		AurynTime lastPatternArrivalClock;
 
-	vector<AurynTime> singlePatternResponses;  //!< This tracks the latencies of all responses between two pattern presentations.
+		vector<AurynTime> singlePatternResponses;  //!< This tracks the latencies of all responses between two pattern presentations.
 
-	PatternCount requestedPatternPresentationsPerTrackingWindow;
-	PatternCount patternPresentationsInCurrentTrackingWindow;
-	unsigned int truepositivesInCurrentTrackingWindow;
-	unsigned int falsepositivesInCurrentTrackingWindow;
+		PatternCount requestedPatternPresentationsPerTrackingWindow;
+		PatternCount patternPresentationsInCurrentTrackingWindow;
+		unsigned int truepositivesInCurrentTrackingWindow;
+		unsigned int falsepositivesInCurrentTrackingWindow;
 
-	void init(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
-			  NeuronID neuronToTrack, PatternID patternToTrack, PatternID binsizeInPatternPresentations);
+		void init(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder,
+				  NeuronID neuronToTrack, PatternID patternToTrack, PatternID binsizeInPatternPresentations);
 
-public:
-	StimulusResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder, string filename, AurynTime binsizeInPatternPresentations,
-							NeuronID neuronToTrack, PatternID patternToTrack);
-	virtual ~StimulusResponseMonitor();
+	public:
+		StimulusResponseMonitor(PolychronousPoissonGroup *spikepatternprovider, NeuronGroup *responder, string filename, AurynTime binsizeInPatternPresentations,
+								NeuronID neuronToTrack, PatternID patternToTrack);
+		virtual ~StimulusResponseMonitor();
 
-	virtual void propagate() override;
+		virtual void propagate() override;
 
-	void writeTFPNRatesToFile();
+		void writeTFPNRatesToFile();
 
-	/** For each pattern presentation, this computes true positives and false positives. The result is then stored in the fields truepositivesInCurrentTrackingWindow and falsepositivesInCurrentTrackingWindow. */
-	void computeHitsAndFalsealarms();
+		/** For each pattern presentation, this computes true positives and false positives. The result is then stored in the fields truepositivesInCurrentTrackingWindow and falsepositivesInCurrentTrackingWindow. */
+		void computeHitsAndFalsealarms();
 
-	void resetTFPNs();
-};
+		void resetTFPNs();
+	};
+
+}
+
 
 #endif /*SPIKERESPONSEMONITOR_H_*/

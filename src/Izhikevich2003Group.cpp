@@ -1,30 +1,7 @@
-/* 
-* Copyright 2014-2015 Friedemann Zenke
-*
-* This file is part of Auryn, a simulation package for plastic
-* spiking neural networks.
-* 
-* Auryn is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* Auryn is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Auryn.  If not, see <http://www.gnu.org/licenses/>.
-*
-* If you are using Auryn or parts of it for your work please cite:
-* Zenke, F. and Gerstner, W., 2014. Limits to high-speed simulations 
-* of spiking neural networks using general-purpose computers. 
-* Front Neuroinform 8, 76. doi: 10.3389/fninf.2014.00076
-*/
 
 #include <Izhikevich2003Group.h>
 
+using namespace auryn;
 
 Izhikevich2003Group::Izhikevich2003Group( NeuronID size, AurynFloat load, NeuronID total ) : NeuronGroup(size,load,total)
 {
@@ -73,10 +50,10 @@ void Izhikevich2003Group::init()
     /** End set up Handles **/
 
     // scale constants to keep time and other units SI-conform:
-	scale_mem = dt/ms /(C/pF) * mV;
-	scale_u = dt/ms *mV;
+	scale_mem = auryn_timestep/ms /(C/pF) * mV;
+	scale_u = auryn_timestep/ms *mV;
 
-	projMult = 1.5 * ms/dt;  // by default, lets use the same multiplicator as in my matlab code.
+	projMult = 1.5 * ms/auryn_timestep;  // by default, lets use the same multiplicator as in my matlab code.
 
 	clear();
 }
@@ -214,12 +191,12 @@ void Izhikevich2003Group::integrate_membrane_debug_two()
     {
 		if (use_recovery)
 		{
-			handle_u[n] += dt/ms * izhi_a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
-			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
+			handle_u[n] += auryn_timestep/ms * izhi_a * ( u_coeffs[1] * handle_mem[n] + u_coeffs[0] - handle_u_temp[n] );
+			handle_mem[n] += auryn_timestep/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u_temp[n] + handle_inputcurrent[n]  ) ;
 		}
 		else
 		{
-			handle_mem[n] += dt/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
+			handle_mem[n] += auryn_timestep/ms/C*mV * ( mem_coeffs[2] * handle_mem[n]*handle_mem[n] + mem_coeffs[1] * handle_mem[n] + mem_coeffs[0] - handle_u[n] + handle_inputcurrent[n]  ) ;
 		}
     }
 
@@ -238,7 +215,7 @@ void Izhikevich2003Group::check_peaks()
     	if ( *i > V_peak ) {
 			NeuronID unit = i-mem->data;
 			push_spike(unit);
-		    set_val (mem, unit, V_reset); // reset
+			auryn_vector_float_set (mem, unit, V_reset); // reset
 		    if (use_recovery)
 		    	auryn_vector_float_add_constant(u,izhi_d); //refractory
 	    		//auryn_vector_float_set(u,unit,d); //refractory
@@ -271,23 +248,23 @@ void Izhikevich2003Group::evolve()
 
 AurynState Izhikevich2003Group::get_t_exc(NeuronID i)
 {
-	return get_val(t_exc,i);
+	return auryn_vector_float_get(t_exc,i);
 }
 AurynState Izhikevich2003Group::get_t_inh(NeuronID i)
 {
-	return get_val(t_inh,i);
+	return auryn_vector_float_get(t_inh,i);
 }
 AurynState Izhikevich2003Group::get_v_temp(NeuronID i)
 {
-	return get_val(v_temp,i);
+	return auryn_vector_float_get(v_temp,i);
 }
 AurynState Izhikevich2003Group::get_u_temp(NeuronID i)
 {
-	return get_val(u_temp,i);
+	return auryn_vector_float_get(u_temp,i);
 }
 AurynState Izhikevich2003Group::get_u(NeuronID i)
 {
-	return get_val(u,i);
+	return auryn_vector_float_get(u,i);
 }
 AurynState Izhikevich2003Group::get_tempMemState(int i)
 {
@@ -301,7 +278,7 @@ AurynFloat Izhikevich2003Group::get_projMult()
 
 void Izhikevich2003Group::set_projMult(AurynFloat the_projMult)
 {
-	projMult = the_projMult * ms/dt;  // adjust for possibly different dt in which the simulator may be compiled.
+	projMult = the_projMult * ms/auryn_timestep;  // adjust for possibly different dt in which the simulator may be compiled.
 }
 
 

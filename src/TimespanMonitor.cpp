@@ -25,6 +25,8 @@
 
 #include "TimespanMonitor.h"
 
+using namespace auryn;
+
 TimespanMonitor::TimespanMonitor(string filename) : Monitor(filename)
 {
 }
@@ -74,8 +76,8 @@ void TimespanMonitor::set_recording_times(auryn_vector_float* starttimes, auryn_
 
 	for (unsigned int i = 0; i < num_recording_timespans; ++i)
 	{
-		startclocks[i] = int(starttimes->data[i] / dt);  // convert from SI time in s to integer simulation steps
-		stopclocks[i]  = int(stoptimes->data[i]  / dt);  // convert from SI time in s to integer simulation steps
+		startclocks[i] = int(starttimes->data[i] / auryn_timestep);  // convert from SI time in s to integer simulation steps
+		stopclocks[i]  = int(stoptimes->data[i]  / auryn_timestep);  // convert from SI time in s to integer simulation steps
 	}
 
 	use_given_recordingtimes = true;

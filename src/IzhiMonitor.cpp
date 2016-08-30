@@ -25,6 +25,8 @@
 
 #include "IzhiMonitor.h"
 
+using namespace auryn;
+
 IzhiMonitor::IzhiMonitor(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize) : TimespanMonitor(filename)
 {
 	init(source,id,filename,stepsize);
@@ -36,7 +38,7 @@ IzhiMonitor::~IzhiMonitor()
 
 void IzhiMonitor::init(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize)
 {
-	sys->register_monitor(this);
+	sys->register_device(this);
 
 	src = source;
 	ssize = stepsize;
@@ -73,12 +75,12 @@ void IzhiMonitor::record_data()
 {
 	if (sys->get_clock()%ssize==0)
 	{
-		outfile << dt*(sys->get_clock()) << " \t" ;
-		outfile << src->get_ampa(nid) << " \t" ;
-		outfile << src->get_nmda(nid) << " \t" ;
+		outfile << auryn_timestep*(sys->get_clock()) << " \t" ;
+		outfile << src->g_ampa->get(nid) << " \t";
+		outfile << src->g_nmda->get(nid) << " \t";
 		outfile << src->get_t_exc(nid) << " \t";
 		outfile << src->get_t_inh(nid) << " \t";
-		outfile << src->get_mem(nid) << " \t";
+		outfile << src->mem->get(nid) << " \t";
 		outfile << src->get_v_temp(nid) << " \t";
 		outfile << src->get_u(nid) << "\t";
 		outfile << src->get_u_temp(nid) << "\t";

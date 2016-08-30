@@ -21,6 +21,7 @@
 #include "auryn.h"
 
 using namespace std;
+using namespace auryn;
 
 namespace po = boost::program_options;
 namespace mpi = boost::mpi;
@@ -107,23 +108,7 @@ int main(int ac, char* av[])
     }
 
 	// BEGIN Global stuff
-	mpi::environment env(ac, av);
-	mpi::communicator world;
-	communicator = &world;
-
-	try
-	{
-		sprintf(strbuf, "%s/%s.%d.log", dir.c_str(), file_prefix.c_str(), world.rank() );
-		string logfile = strbuf;
-		logger = new Logger(logfile,world.rank(),PROGRESS,EVERYTHING);
-	}
-	catch ( AurynOpenFileException excpt )
-	{
-		std::cerr << "Cannot proceed without log file. Exiting all ranks ..." << '\n';
-		env.abort(1);
-	}
-
-	sys = new System(&world);
+	auryn_init(ac, av);
 	// END Global stuff
 
 	NeuronID N_post = 1;
@@ -143,7 +128,7 @@ int main(int ac, char* av[])
 			errcode = 2;
 
 
-	double stepcurrent = 14.0 / dt;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	double stepcurrent = 14.0 / auryn_timestep;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
 	theInjector->set_current(0,stepcurrent);
 
 
@@ -151,11 +136,10 @@ int main(int ac, char* av[])
 	if (!sys->run(simtime-stepAt,false))
 			errcode = 1;
 
-	logger->msg("Freeing ...",PROGRESS,true);
-	delete sys;
-
 	if (errcode)
-		env.abort(errcode);
+		mpienv->abort(errcode);
+	logger->msg("Freeing ...",PROGRESS,true);
+	auryn_free();
 	return errcode;
 }
 

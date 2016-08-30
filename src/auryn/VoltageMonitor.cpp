@@ -58,7 +58,7 @@ void VoltageMonitor::record_data()
 {
 	if (sys->get_clock()%ssize==0)
 	{
-		double voltage = src->get_mem(nid);
+		double voltage = src->mem->get(nid);
 		if ( paste_spikes ) {
 			SpikeContainer * spikes = src->get_spikes_immediate();
 			for ( int i = 0 ; i < spikes->size() ; ++i ) {

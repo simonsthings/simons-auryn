@@ -25,6 +25,8 @@
 
 #include "STDPlsConnection.h"
 
+using namespace auryn;
+
 void STDPlsConnection::init(AurynWeight lambda, AurynWeight maxweight)
 {
 	if ( dst->get_post_size() == 0 ) return;
@@ -32,9 +34,9 @@ void STDPlsConnection::init(AurynWeight lambda, AurynWeight maxweight)
 	tau_plus  = 20.0e-3;
 	tau_minus = 20.0e-3;
 
-
-	tr_pre  = src->get_pre_trace(tau_minus);
-	tr_post = dst->get_post_trace(tau_plus);
+// Todo: probably just need to completely replace this class anyway. So just deactivating this for allowing temporary compilation:
+//	tr_pre  = src->get_pre_trace(tau_minus);
+//	tr_post = dst->get_post_trace(tau_plus);
 
 	set_max_weight(maxweight); 
 

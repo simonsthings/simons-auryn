@@ -26,98 +26,103 @@
 #ifndef STDPLSCONNECTION_H_
 #define STDPLSCONNECTION_H_
 
-#include "auryn_definitions.h"
-#include "DuplexConnection.h"
-#include "EulerTrace.h"
-#include "LinearTrace.h"
-#include "SpikeDelay.h"
+#include "auryn/auryn_definitions.h"
+#include "auryn/DuplexConnection.h"
+#include "auryn/EulerTrace.h"
+#include "auryn/LinearTrace.h"
+#include "auryn/SpikeDelay.h"
 
 
 using namespace std;
 
-
-/*! \brief Doublet STDP All-to-All as implemented in NEST as stdp_synapse_hom 
- *
- * This class implements a range of doublet STDP rules including weight dependent 
- * ones (hence the wd suffix in he classn ame). 
- * It is meant to be similar to stdp_synapse_hom in NEST. 
- *
- */
-class STDPlsConnection : public DuplexConnection
+namespace auryn
 {
 
-private:
-	AurynWeight learning_rate;
 
-	AurynWeight param_lambda;
-	AurynWeight param_alpha;
+/*! \brief Doublet STDP All-to-All as implemented in NEST as stdp_synapse_hom
+ *
+ * This class implements a range of doublet STDP rules including weight dependent
+ * ones (hence the wd suffix in he classn ame).
+ * It is meant to be similar to stdp_synapse_hom in NEST.
+ *
+ */
+	class STDPlsConnection : public DuplexConnection
+	{
 
-	AurynWeight param_mu_plus;
-	AurynWeight param_mu_minus;
+	private:
+		AurynWeight learning_rate;
 
-	void init(AurynWeight lambda, AurynWeight maxweight);
-	void init_shortcuts();
+		AurynWeight param_lambda;
+		AurynWeight param_alpha;
 
-protected:
+		AurynWeight param_mu_plus;
+		AurynWeight param_mu_minus;
 
-	AurynWeight tau_plus;
-	AurynWeight tau_minus;
+		void init(AurynWeight lambda, AurynWeight maxweight);
+		void init_shortcuts();
 
-	NeuronID * fwd_ind; 
-	AurynWeight * fwd_data;
+	protected:
 
-	NeuronID * bkw_ind; 
-	AurynWeight ** bkw_data;
+		AurynWeight tau_plus;
+		AurynWeight tau_minus;
 
-	PRE_TRACE_MODEL * tr_pre;
-	DEFAULT_TRACE_MODEL * tr_post;
+		NeuronID * fwd_ind;
+		AurynWeight * fwd_data;
+
+		NeuronID * bkw_ind;
+		AurynWeight ** bkw_data;
+
+		PRE_TRACE_MODEL * tr_pre;
+		DEFAULT_TRACE_MODEL * tr_post;
 
 
-	AurynWeight fudge_pot;
-	AurynWeight fudge_dep;
+		AurynWeight fudge_pot;
+		AurynWeight fudge_dep;
 
 
-	void propagate_forward();
-	void propagate_backward();
+		void propagate_forward();
+		void propagate_backward();
 
-	void compute_fudge_factors();
+		void compute_fudge_factors();
 
-public:
+	public:
 
-	bool stdp_active;
+		bool stdp_active;
 
-	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
-			TransmitterType transmitter=GLUT);
+		STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
+						 TransmitterType transmitter=GLUT);
 
-	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
-			const char * filename, 
-			AurynWeight lambda=1e-5, 
-			AurynWeight maxweight=0.1 , 
-			TransmitterType transmitter=GLUT);
+		STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
+						 const char * filename,
+						 AurynWeight lambda=1e-5,
+						 AurynWeight maxweight=0.1 ,
+						 TransmitterType transmitter=GLUT);
 
-	STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
-			AurynWeight weight, AurynWeight sparseness=0.05, 
-			AurynWeight lambda=0.01, 
-			AurynWeight maxweight=100. , 
-			TransmitterType transmitter=GLUT,
-			string name = "STDPlsConnection" );
+		STDPlsConnection(SpikingGroup * source, NeuronGroup * destination,
+						 AurynWeight weight, AurynWeight sparseness=0.05,
+						 AurynWeight lambda=0.01,
+						 AurynWeight maxweight=100. ,
+						 TransmitterType transmitter=GLUT,
+						 string name = "STDPlsConnection" );
 
-	void set_alphalambda_alternative(AurynWeight A_plus, AurynWeight A_minus, AurynWeight learningrate);
-	void set_alpha(AurynWeight a);
-	void set_lambda(AurynWeight l);
+		void set_alphalambda_alternative(AurynWeight A_plus, AurynWeight A_minus, AurynWeight learningrate);
+		void set_alpha(AurynWeight a);
+		void set_lambda(AurynWeight l);
 
-	void set_mu_plus(AurynWeight m);
-	void set_mu_minus(AurynWeight m);
+		void set_mu_plus(AurynWeight m);
+		void set_mu_minus(AurynWeight m);
 
-	void set_max_weight(AurynWeight w);
+		void set_max_weight(AurynWeight w);
 
-	virtual ~STDPlsConnection();
-	virtual void finalize();
-	void free();
+		virtual ~STDPlsConnection();
+		virtual void finalize();
+		void free();
 
-	virtual void propagate();
-	virtual void evolve();
+		virtual void propagate();
+		virtual void evolve();
 
-};
+	};
+}
+
 
 #endif /*STDPLSCONNECTION_H_*/

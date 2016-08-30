@@ -27,28 +27,33 @@
 #define IZHIMONITOR_H_
 
 #include <Izhikevich2003Group.h>
-#include "auryn_definitions.h"
+#include "auryn/auryn_definitions.h"
 #include "TimespanMonitor.h"
-#include "Monitor.h"
-#include "System.h"
-#include "Connection.h"
+#include "auryn/Monitor.h"
+#include "auryn/System.h"
+#include "auryn/Connection.h"
 #include <fstream>
 #include <iomanip>
 
 using namespace std;
 
-/*! \brief Records the AMPA conductance from one specific unit from the source group. */
-class IzhiMonitor : public TimespanMonitor
+namespace auryn
 {
-protected:
-	Izhikevich2003Group * src;
-	NeuronID nid;
-	AurynTime ssize;
-	void record_data();
-	void init(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize);
-public:
-	IzhiMonitor(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize=1);
-	virtual ~IzhiMonitor();
-};
+/*! \brief Records the AMPA conductance from one specific unit from the source group. */
+	class IzhiMonitor : public TimespanMonitor
+	{
+	protected:
+		Izhikevich2003Group * src;
+		NeuronID nid;
+		AurynTime ssize;
+		void record_data();
+		void init(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize);
+	public:
+		IzhiMonitor(Izhikevich2003Group * source, NeuronID id, string filename, AurynTime stepsize=1);
+		virtual ~IzhiMonitor();
+	};
+
+}
+
 
 #endif /*IZHIMONITOR_H_*/

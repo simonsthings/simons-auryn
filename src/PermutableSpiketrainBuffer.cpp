@@ -7,6 +7,7 @@
 
 #include <PermutableSpiketrainBuffer.h>
 
+using namespace auryn;
 
 PermutableSpiketrainBuffer::PermutableSpiketrainBuffer(NeuronID N_total, AurynTime timesteps_total)
 {

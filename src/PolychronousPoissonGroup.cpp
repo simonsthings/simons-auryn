@@ -7,6 +7,8 @@
 
 #include "PolychronousPoissonGroup.h"
 
+using namespace auryn;
+
 PolychronousPoissonGroup::PolychronousPoissonGroup(NeuronID N_total, NeuronID N_presenting, NeuronID N_subpresenting,
 		AurynFloat duration, AurynFloat interval, NeuronID num_stimuli,  AurynDouble rate, string outputfilename) : PoissonGroup(N_total,rate)
 {
@@ -33,8 +35,8 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 	participationProbability = 1.0;
 
 	numPatterns = stimuli;
-	patternDuration = duration/dt;
-	patternInterval = interval/dt;
+	patternDuration = duration/auryn_timestep;
+	patternInterval = interval/auryn_timestep;
 	logger->parameter("duration", (int)duration);
 	logger->parameter("mean_isi", (int)patternInterval);
 	max_patternDuration = patternDuration;
@@ -71,7 +73,7 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 			exit(1);
 		}
 		patterntimesfile.setf(ios::fixed);
-		patterntimesfile.precision(log(dt)/log(10)+1 );
+		patterntimesfile.precision(log(auryn_timestep)/log(10)+1 );
 	}
 
 }
@@ -407,8 +409,8 @@ void PolychronousPoissonGroup::setTestingProtocol(vector<AurynFloat> theTestprot
 
 	// assumes that testprotocolDurations contains at least one element. Todo: ensure testprotocolDurations always contains at least one element!
 	next_phase_id = 0;
-	patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / dt);
-	next_phase_clock = (AurynTime)(testprotocolDurations[next_phase_id] / dt);
+	patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / auryn_timestep);
+	next_phase_clock = (AurynTime)(testprotocolDurations[next_phase_id] / auryn_timestep);
 }
 
 /**
@@ -423,8 +425,8 @@ void PolychronousPoissonGroup::checkAndUpdateTestingProtocol()
 	if ( sys->get_clock() > next_phase_clock )
 	{
 		next_phase_id++;
-		patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / dt);
-		next_phase_clock += (AurynTime)(testprotocolDurations[next_phase_id] / dt);
+		patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / auryn_timestep);
+		next_phase_clock += (AurynTime)(testprotocolDurations[next_phase_id] / auryn_timestep);
 	}
 
 }

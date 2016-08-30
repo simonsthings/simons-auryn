@@ -25,6 +25,7 @@
 
 #include <Izhikevich2007Group.h>
 
+using namespace auryn;
 
 Izhikevich2007Group::Izhikevich2007Group( NeuronID size, AurynFloat load, NeuronID total ) : NeuronGroup(size,load,total)
 {
@@ -101,8 +102,8 @@ void Izhikevich2007Group::init()
     /** End set up Handles **/
 
     // scale constants to keep time and other units SI-conform:
-	scale_mem = dt/ms /(C/pF) * mV;
-	scale_u = dt/ms *mV;
+	scale_mem = auryn_timestep/ms /(C/pF) * mV;
+	scale_u = auryn_timestep/ms *mV;
 
 	//cout << setiosflags(ios::scientific) << setprecision(6);
 	cout << setiosflags(ios::fixed) << setprecision(6);
@@ -199,9 +200,9 @@ void Izhikevich2007Group::check_peaks()
     	if ( *i > V_peak ) {
 			NeuronID unit = i-mem->data;
 			push_spike(unit);
-		    set_val (mem, unit, c); // reset
+			auryn_vector_float_set (mem, unit, c); // reset
 		    if (use_recovery)
-		    	set_val (u, unit, d); //refractory
+				auryn_vector_float_set (u, unit, d); //refractory
 		}
 	}
 
@@ -225,27 +226,27 @@ void Izhikevich2007Group::evolve()
 
 AurynState Izhikevich2007Group::get_t_exc(NeuronID i)
 {
-	return get_val(t_exc,i);
+	return auryn_vector_float_get(t_exc,i);
 }
 
 AurynState Izhikevich2007Group::get_t_inh(NeuronID i)
 {
-	return get_val(t_inh,i);
+	return auryn_vector_float_get(t_inh,i);
 }
 
 AurynState Izhikevich2007Group::get_v_temp(NeuronID i)
 {
-	return get_val(v_temp,i);
+	return auryn_vector_float_get(v_temp,i);
 }
 
 AurynState Izhikevich2007Group::get_u_temp(NeuronID i)
 {
-	return get_val(u_temp,i);
+	return auryn_vector_float_get(u_temp,i);
 }
 
 AurynState Izhikevich2007Group::get_u(NeuronID i)
 {
-	return get_val(u,i);
+	return auryn_vector_float_get(u,i);
 }
 
 AurynState Izhikevich2007Group::get_tempMemState(int i)

@@ -18,12 +18,13 @@
 */
 
 #include "auryn.h"
-#include "../src/System.h"
+#include "../src/auryn/System.h"
 #include <ctime>
 #include <boost/property_tree/json_parser.hpp>
 #include <StimulusResponseMonitor.h>
 
 using namespace std;
+using namespace auryn;
 
 namespace po = boost::program_options;
 namespace mpi = boost::mpi;
@@ -59,7 +60,7 @@ float getSamplinginterval(boost::property_tree::ptree const& pt, string path)
 {
 	if (pt.get<string>(path) == "dt")
 	{
-		return (float) dt;
+		return (float) auryn_timestep;
 	}
 	else
 	{
@@ -196,7 +197,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		{
 			string inputRASfile = simparams.get<string>("neurongroups.inputs.rasfilename");
 			cout << "The input RAS file: " << inputRASfile << endl;
-			poisson = new FileInputGroup(Npre, inputRASfile);
+			poisson = new FileInputGroup(Npre, inputRASfile,false,0.0);
 		}
 		else if ("StructuredPoissonGroup" == requestedNeuronGroupClass)
 		{
@@ -391,11 +392,11 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 			};break;
 			case 2:
 			{
-				STDPlsConnection* theConn = new STDPlsConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
+//				STDPlsConnection* theConn = new STDPlsConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
 				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
 				//theConn->set_mu_plus(0.0);
 				//theConn->set_mu_minus(0.0);
-				con1 = theConn;
+//				con1 = theConn;
 			};break;
 			default:
 			{
@@ -488,7 +489,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	VoltageMonitor* vmon = new VoltageMonitor(detector_neuron, 0, tmpstr.c_str(), getSamplinginterval(simparams, "recordings.outputs.samplinginterval_membranes"));
 	vmon->set_recording_times(starttimes, stoptimes);
 
-
+	/*
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".ampa";
 	AmpaMonitor* amon = new AmpaMonitor(detector_neuron, 0, tmpstr.c_str(),
@@ -501,7 +502,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	NmdaMonitor* nmon = new NmdaMonitor(detector_neuron, 0, tmpstr.c_str(),
 				(AurynTime)(getSamplinginterval(simparams, "recordings.outputs.samplinginterval_nmda") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
 	nmon->set_recording_times(starttimes, stoptimes);
-
+	*/
 
 
 
@@ -515,7 +516,7 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".izhi";
 	IzhiMonitor* izhmon = new IzhiMonitor((Izhikevich2003Group*)detector_neuron, 0, tmpstr.c_str(),
-				  (AurynTime)(getSamplinginterval(simparams,"recordings.outputs.samplinginterval_ampa") / dt)); // divide by dt because constructor interfaces are not (yet) normed across classes.
+				  (AurynTime)(getSamplinginterval(simparams,"recordings.outputs.samplinginterval_ampa") / auryn_timestep)); // divide by dt because constructor interfaces are not (yet) normed across classes.
 	izhmon->set_recording_times(starttimes, stoptimes);
 
 
@@ -580,7 +581,7 @@ void setupHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron, D
 
 void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams)
 {
-	communicator = &world;
+	mpicommunicator = &world;
 	try
 	{
 		std::ostringstream out;
@@ -617,9 +618,10 @@ int main(int ac, char* av[])
 
 
 	// BEGIN Global definitions
-	mpi::environment env(ac, av);
-	mpi::communicator world;
-	defineGlobals(world, env, simparams);
+	//mpi::environment env(ac, av);
+	//mpi::communicator world;
+	//defineGlobals(world, env, simparams);
+	auryn_init(ac, av);
 	// END Global definitions
 
 
@@ -649,11 +651,10 @@ int main(int ac, char* av[])
 	// END running the simulation.
 
 
-	logger->msg("Freeing ..",PROGRESS,true);
-	delete sys;
-
 	if (errcode)
-		env.abort(errcode);
+		mpienv->abort(errcode);
+	logger->msg("Freeing ...",PROGRESS,true);
+	auryn_free();
 	return errcode;
 }
 

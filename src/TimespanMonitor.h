@@ -26,43 +26,48 @@
 #ifndef TIMESPANMONITOR_H_
 #define TIMESPANMONITOR_H_
 
-#include "auryn_definitions.h"
-#include "Monitor.h"
-#include "System.h"
-#include "Connection.h"
+#include "auryn/auryn_definitions.h"
+#include "auryn/Monitor.h"
+#include "auryn/System.h"
+#include "auryn/Connection.h"
 #include <fstream>
 #include <iomanip>
 #include <string>
 
 using namespace std;
 
+namespace auryn
+{
 /*! \brief Adds a way to record only predefined timespans of data.
- * 
+ *
  * If set_recording_times() has not been set (or you have overwritten propagate() and record_conditional() is not being used),
  * TimespanMonitor behaves just as Monitor. In your propagate function, call record_conditional() instead of directly writing
  * the output data. Implement your output data writing in the record_data() function.
  */
 
-class TimespanMonitor : protected Monitor
-{
-protected:
-	unsigned int num_recording_timespans=0;
-	unsigned int* startclocks = NULL;  // considering std::vector<uint> here. Votes?
-	unsigned int* stopclocks  = NULL;  // considering std::vector<uint> here. Votes?
-	bool use_given_recordingtimes = false;
-	int recordingtime_id = 0;
-	void record_conditional();
-	virtual void record_data() = 0;
-	/*! Standard constructor with file name*/
-	TimespanMonitor(string filename);
-	/*! Standard destructor  */
-	virtual ~TimespanMonitor();
+	class TimespanMonitor : protected Monitor
+	{
+	protected:
+		unsigned int num_recording_timespans=0;
+		unsigned int* startclocks = NULL;  // considering std::vector<uint> here. Votes?
+		unsigned int* stopclocks  = NULL;  // considering std::vector<uint> here. Votes?
+		bool use_given_recordingtimes = false;
+		int recordingtime_id = 0;
+		void record_conditional();
+		virtual void record_data() = 0;
+		/*! Standard constructor with file name*/
+		TimespanMonitor(string filename);
+		/*! Standard destructor  */
+		virtual ~TimespanMonitor();
 
-public:
-	/** Specify the times during which recording should be active. TODO: Just use normal std::vector<float> here. */
-	void set_recording_times(auryn_vector_float* starttimes, auryn_vector_float* stoptimes);
-	/*! Default implementation for propagate() */
-	virtual void propagate();
-};
+	public:
+		/** Specify the times during which recording should be active. TODO: Just use normal std::vector<float> here. */
+		void set_recording_times(auryn_vector_float* starttimes, auryn_vector_float* stoptimes);
+		/*! Default implementation for propagate() */
+		virtual void propagate();
+	};
+}
+
+
 
 #endif /*TIMESPANMONITOR_H_*/
