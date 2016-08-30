@@ -27,20 +27,20 @@
 
 using namespace auryn;
 
-SpikeMonitor::SpikeMonitor(SpikingGroup * source, std::string filename, NeuronID from, NeuronID to) 
-	: Monitor(filename)
+SpikeMonitor::SpikeMonitor(SpikingGroup * source, std::string filename, NeuronID from, NeuronID to)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,from,to);
 }
 
 SpikeMonitor::SpikeMonitor(SpikingGroup * source, std::string filename, NeuronID to)
-	: Monitor(filename)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,0,to);
 }
 
 SpikeMonitor::SpikeMonitor(SpikingGroup * source, std::string filename)
-	: Monitor(filename)
+	: TimespanMonitor(filename)
 {
 	init(source,filename,0,source->get_size());
 }
@@ -74,7 +74,7 @@ void SpikeMonitor::set_every(NeuronID every)
 	n_every = every;
 }
 
-void SpikeMonitor::propagate()
+void SpikeMonitor::record_data()
 {
 	if ( !active ) return;
 
@@ -83,7 +83,7 @@ void SpikeMonitor::propagate()
 			if ( *it < n_to && (*it%n_every==0) ) {
 			  // using the good old stdio.h for formatting seems a bit faster 
 			  char buffer[255];
-			  int n = sprintf(buffer,"%f %u\n",auryn::sys->get_time(), *it); 
+			  int n = sprintf(buffer,"%f %u\n",auryn::sys->get_time(), *it);
 			  outfile.write(buffer,n); 
 			}
 		}

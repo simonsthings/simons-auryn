@@ -30,6 +30,7 @@
 
 #include "auryn_definitions.h"
 #include "AurynVector.h"
+#include "TimespanMonitor.h"
 #include "Monitor.h"
 #include "System.h"
 #include "Connection.h"
@@ -45,7 +46,7 @@ namespace auryn {
  * VOLTAGEMONITOR_PASTED_SPIKE_HEIGHT by reading out the the current spikes. For 
  * performance it is adviced to use the StateMonitor which does not do any
  * spike pasting. */
-class VoltageMonitor : public Monitor
+class VoltageMonitor : public TimespanMonitor
 {
 private:
 	/*! Global neuron id to record from */
@@ -63,6 +64,9 @@ protected:
 
 	/*! Defines the maximum recording time in AurynTime to save space. */
 	AurynTime tStop;
+
+	/*! Uses only the given recording timespans to save space. */
+	void record_data();
 
 	/*! Standard initialization */
 	void init(NeuronGroup * source, NeuronID id, string filename, AurynTime stepsize);
@@ -84,7 +88,6 @@ public:
 
 	VoltageMonitor(NeuronGroup * source, NeuronID id, string filename,  AurynDouble stepsize=auryn_timestep);
 	virtual ~VoltageMonitor();
-	void propagate();
 };
 
 }

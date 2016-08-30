@@ -27,7 +27,7 @@
 
 using namespace auryn;
 
-VoltageMonitor::VoltageMonitor(NeuronGroup * source, NeuronID id, std::string filename, AurynDouble stepsize) : Monitor(filename)
+VoltageMonitor::VoltageMonitor(NeuronGroup * source, NeuronID id, std::string filename, AurynDouble stepsize) : TimespanMonitor(filename)
 {
 	init(source,id,filename,(AurynTime)(stepsize/auryn_timestep));
 }
@@ -47,8 +47,6 @@ void VoltageMonitor::init(NeuronGroup * source, NeuronID id, std::string filenam
 	gid = src->rank2global(nid);
 	paste_spikes = true;
 
-	tStop = -1; // at the end of all times ...
-
 	if ( nid < src->get_post_size() ) {
 		auryn::sys->register_device(this);
 		outfile << std::setiosflags(std::ios::fixed) << std::setprecision(6);
@@ -56,25 +54,22 @@ void VoltageMonitor::init(NeuronGroup * source, NeuronID id, std::string filenam
 	}
 }
 
-void VoltageMonitor::propagate()
+void VoltageMonitor::record_data()
 {
-	if ( auryn::sys->get_clock() < tStop ) {
-		// we output spikes irrespectively of the sampling interval, because 
-		// the membrane potential isn't a smooth function for most IF models when
-		// they spike, so it's easy to "miss" a spike otherwise
+	if (sys->get_clock()%ssize==0)
+	{
 		double voltage = src->mem->get(nid);
 		if ( paste_spikes ) {
 			SpikeContainer * spikes = src->get_spikes_immediate();
 			for ( int i = 0 ; i < spikes->size() ; ++i ) {
 				if ( spikes->at(i) == gid ) {
 					voltage = VOLTAGEMONITOR_PASTED_SPIKE_HEIGHT;
-					outfile << (auryn::sys->get_time()) << " " << voltage << "\n";
+					//outfile << (auryn::sys->get_time()) << " " << voltage << "\n";
 					return;
 				}
 			}
 		}
-		if ( (auryn::sys->get_clock())%ssize==0 )
-			outfile << (auryn::sys->get_time()) << " " << voltage << "\n";
+		outfile << (auryn::sys->get_time()) << " " << voltage << "\n";
 	}
 }
 
@@ -90,5 +85,15 @@ void VoltageMonitor::set_stop_time(AurynDouble time)
 	if (time < 0) {
 		auryn::logger->msg("Warning: Negative stop times not supported -- ingoring.",WARNING);
 	} 
-	else tStop = auryn::sys->get_clock() + time/auryn_timestep;
+	else
+	{
+		// create temporary auryn_vector_floats because that is what set_recording_times expects. Maybe just start using vectors here anyway!
+		auryn_vector_float* starttimes_temp = auryn_vector_float_alloc(1);
+		auryn_vector_float* stoptimes_temp  = auryn_vector_float_alloc(1);
+		starttimes_temp->data[0] = sys->get_time();
+		stoptimes_temp->data[0]  = sys->get_time() + time;
+		set_recording_times(starttimes_temp,stoptimes_temp);
+		auryn_vector_float_free(starttimes_temp);
+		auryn_vector_float_free(stoptimes_temp);
+	}
 }

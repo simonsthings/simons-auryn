@@ -87,6 +87,7 @@
 #include "auryn/CorrelatedPoissonGroup.h"
 #include "auryn/MovingBumpGroup.h"
 #include "auryn/AuditoryBeepGroup.h"
+#include "PolychronousPoissonGroup.h"
 
 // NeuronGroups
 #include "auryn/IFGroup.h"
@@ -98,6 +99,8 @@
 #include "auryn/IafPscDeltaGroup.h"
 #include "auryn/IafPscExpGroup.h"
 #include "auryn/IzhikevichGroup.h"
+#include "Izhikevich2003Group.h"
+#include "Izhikevich2007Group.h"
 
 
 // Checker definitions
@@ -108,6 +111,8 @@
 // Monitor and stimulator definitions
 #include "auryn/Device.h"
 #include "auryn/Monitor.h"
+#include "TimespanMonitor.h"
+#include "IzhiMonitor.h"
 #include "auryn/VoltageMonitor.h"
 #include "auryn/SpikeMonitor.h"
 #include "auryn/BinarySpikeMonitor.h"

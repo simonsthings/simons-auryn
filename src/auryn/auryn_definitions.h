@@ -91,10 +91,12 @@
 #define DEFAULT_MINDISTRIBUTEDSIZE 16
 
 
-/*! \brief These precompiler directives are deprecated and should not be used any more.
+/*! \brief These precompiler directives control
+* what type of synaptic traces Auryn
+* implements for STDP models.
 */
-#define DEFAULT_TRACE_MODEL Trace
-#define PRE_TRACE_MODEL Trace
+#define DEFAULT_TRACE_MODEL EulerTrace
+#define PRE_TRACE_MODEL EulerTrace
 
 
 //* -- End of precompiler options -- *//

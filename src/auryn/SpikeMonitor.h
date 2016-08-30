@@ -30,6 +30,7 @@
 #include "AurynVector.h"
 #include "SpikingGroup.h"
 #include "Monitor.h"
+#include "TimespanMonitor.h"
 #include "System.h"
 #include <fstream>
 
@@ -49,7 +50,7 @@ namespace auryn {
  * maninly for debugging).
  * 
  */
-class SpikeMonitor : public Monitor
+class SpikeMonitor : public TimespanMonitor
 {
 private:
     NeuronID n_from;
@@ -60,6 +61,10 @@ private:
 	void init(SpikingGroup * source, std::string filename, NeuronID from, NeuronID to);
 	void free();
 	
+protected:
+	/*! \brief  Record data function. Called indirectly by propagate(). */
+	virtual void record_data();
+
 public:
 	/*! Switch variable to enable/disable recording. */
 	bool active;
@@ -98,9 +103,6 @@ public:
 
 	/*! \brief  Default destructor. */
 	virtual ~SpikeMonitor();
-
-	/*! \brief  Propagate function for internal use. */
-	void propagate();
 };
 
 }
