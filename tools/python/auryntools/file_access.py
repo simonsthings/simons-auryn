@@ -67,8 +67,8 @@ class AurynBinaryFile:
         self.num_data_frames = self.last_frame-1
         self.datafile.seek(self.frame_size,0)
         if self.debug:
-            print "Filesize", self.filesize
-            print "Number of frames", self.num_data_frames
+            print("Filesize %i"%self.filesize)
+            print("Number of frames %i"%self.num_data_frames)
 
         # Determine min and max time
         at,val = self.get_frame(1)
@@ -78,9 +78,12 @@ class AurynBinaryFile:
 
     def open_file(self):
 
-        # TODO add exception handling
         self.frame_size = struct.calcsize(self.data_format)
-        self.datafile = open(self.filename, "rb")
+        try:
+            self.datafile = open(self.filename, "rb")
+        except IOError:
+            print("Oops! Could not open file %s. Invalid file name."%self.filename)
+            raise ValueError
 
         self.refresh()
 
@@ -102,7 +105,8 @@ class AurynBinaryStateFile(AurynBinaryFile):
         self.open_file()
 
     def __del__(self):
-        self.datafile.close()
+        if self.datafile:
+            self.datafile.close()
 
     def get_data(self, t_start=0.0, t_stop=1e32):
         ''' Returns timeseries of state for given temporal interval'''
@@ -127,7 +131,7 @@ class AurynBinarySpikeFile(AurynBinaryFile):
 
     Public methods:
     get_spikes: extracts spikes (tuples of time and neuron id) for a given temporal range.
-    get_spike_times_from_interval: extracts the spike times of a single unit and a given temporal range.
+    get_spike_times: extracts the spike times of a single unit and a given temporal range.
     '''
     def __init__(self, filename, debug_output=False):
         # These params might have to adapted ot different Auryn datatypes and versions
@@ -137,9 +141,6 @@ class AurynBinarySpikeFile(AurynBinaryFile):
         self.debug = debug_output
         self.filename = filename
         self.open_file()
-
-    def __del__(self):
-        self.datafile.close()
 
     def get_spikes( self, t_start=0.0, t_stop=1e32, max_id=1e32 ):
         idx_start = self.find_frame( t_start, lower=False )
@@ -207,13 +208,29 @@ class AurynBinarySpikeView:
     A wrapper class for easy extraction of spikes from multiple spk files from different ranks.
     '''
     def __init__(self, filenames):
-        self.filenames = filenames
+        if type(filenames) is list:
+            self.filenames = filenames
+        else:
+            if type(filenames) is str:
+# TODO allow the filenames string to contain wildcards
+                self.filenames = [filenames]
+            else:
+                print("Parameter filenames must be of type list or str.")
+                raise TypeError
+
         self.spike_files = []
         for filename in self.filenames:
             self.spike_files.append( AurynBinarySpikeFile(filename) )
 
     def sort_spikes(self, spikes):
         spikes.sort(key=lambda tup: tup[0])
+
+    def get_spike_times( self, neuron_id=0, t_start=0, t_stop=1e32 ):
+        spike_times = []
+        for spk in self.spike_files:
+            spike_times.extend( spk.get_spike_times( neuron_id, t_start, t_stop ) )
+        spike_times.sort()
+        return spike_times
 
     def get_spikes( self, t_start=0.0, t_stop=1e32, max_id=1e32 ):
         spikes = []
@@ -244,7 +261,7 @@ class AurynBinarySpikeView:
         time_offset -- time offset added to each trigger time shift the window (default 0.0)
         max_neuron_id -- the number of neurons
         ''' 
-        hist = np.zeros(max_neuron_id) 
+        hist = np.zeros(max_neuron_id, dtype=int) 
         for t_spike in trigger_times:
             ts = t_spike+time_offset
             spikes = self.get_spikes(ts, ts+time_window, max_neuron_id)
@@ -254,87 +271,8 @@ class AurynBinarySpikeView:
                 hist += counts
         return hist
 
-def isi(spikes):
-    '''
-    Computes the ISI for spikes 
-    '''
 
-    last_spikes = np.zeros(1)
-    ISIs = []
-    for spike in spikes:
-        t,i = spike
-        if i>=len(last_spikes):
-            last_spikes.resize(i+1)
-        if last_spikes[i] > 0:
-            ISIs.append(t-last_spikes[i])
-        last_spikes[i] = t
-    return ISIs
 
-def isi_hist( spikes, *args, **kwargs ):
-    pl.hist(isi(spikes), *args, **kwargs )
-
-def cvisi(spikes):
-    '''
-    Computes the CV ISI for spikes 
-    '''
-
-    last_spikes = np.zeros(1)
-    sum1 = np.zeros(1)
-    sum2 = np.zeros(1)
-    nspikes = np.zeros(1)
-    for spike in spikes:
-        t,i = spike
-        if i>=len(last_spikes):
-            last_spikes.resize(i+1)
-            sum1.resize(i+1)
-            sum2.resize(i+1)
-            nspikes.resize(i+1)
-        if last_spikes[i] > 0:
-            isi = t-last_spikes[i]
-            sum1[i] += isi
-            sum2[i] += isi**2
-            nspikes[i] += 1
-        last_spikes[i] = t
-
-    cvisi_dist = []
-    for i in xrange(len(sum1)):
-        if nspikes[i]<2: continue
-        mean = sum1[i]/nspikes[i]
-        var  = sum2[i]/(nspikes[i]-1)-mean**2
-        cvisi_dist.append(np.sqrt(var)/mean)
-
-    return cvisi_dist
-
-def cvisi_hist( spikes, *args, **kwargs ):
-    pl.hist(cvisi(spikes), *args, **kwargs )
-
-def spike_counts(spikes):
-    '''
-    Compute spike count for each neuron
-    '''
-
-    nspikes = np.zeros(1)
-    for spike in spikes:
-        t,i = spike
-        if i>=len(nspikes):
-            nspikes.resize(i+1)
-        nspikes[i] += 1
-    return nspikes
-
-def rates(spikes):
-    '''
-    Compute firing rates for each neuron
-    '''
-
-    nspikes = spike_counts(spikes)
-    ar = np.array(spikes)
-    t_min = ar[:,0].min()
-    t_max = ar[:,0].max()
-    t_diff = t_max-t_min
-    return 1.0*nspikes/t_diff
-
-def rate_hist( spikes, *args, **kwargs ):
-    pl.hist(rates(spikes), *args, **kwargs )
 
 
 def main():
