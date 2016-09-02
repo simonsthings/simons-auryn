@@ -2,7 +2,7 @@
  * PolychronousPoissonGroup.h
  *
  *  Created on: 07.04.2016
- *      Author: simon
+ *      Author: Simon Vogt
  */
 
 #ifndef POLYCHRONOUSPOISSONGROUP_H_
@@ -24,17 +24,27 @@ namespace auryn
 //typedef vector< vector<bool> > PermutableSpiketrainBuffer; //!< Multiple SpikeContainers, one for each time step.
 	typedef unsigned int PatternID; //!< NeuronID is an unsigned integeger type used to index neurons in Auryn.
 
-/**
- * \brief A group that reshuffles Poisson noise spike trains to generate polychronous patterns.
- *
- * More specific description will follow.
- */
-	class PolychronousPoissonGroup: public PoissonGroup
+	/**
+	 * \brief A group that reshuffles Poisson noise spike trains to generate polychronous patterns.
+	 *
+	 * More specific description will follow.
+	 */
+	class PolychronousPoissonGroup : public SpikingGroup
 	{
 	private:
 
 		boost::random::mt19937 poly_gen;
 		boost::random::uniform_real_distribution<> float_dist;
+
+		AurynDouble lambda_PPG;  // from PoissonGroup
+		static boost::mt19937 gen_PPG;  // from PoissonGroup
+		boost::uniform_01<> * dist_PPG;  // from PoissonGroup
+		boost::variate_generator<boost::mt19937&, boost::uniform_01<> > * die_PPG;	  // from PoissonGroup
+
+		unsigned int salt;	  // from PoissonGroup
+
+
+
 
 		vector<PermutableSpiketrainBuffer> buffers; // we want multiple buffers, so that one can be read from, one can be ready, and possibly a third could be receiving "live" data from another thread (in the future).
 		unsigned int current_read_buffer;
@@ -58,9 +68,9 @@ namespace auryn
 		SpikeContainer spikingUnitIDs;
 		vector<AurynTime> unorderedLatencies;
 
-		void init(NeuronID N_presenting, NeuronID N_subpresenting,
+		void init(AurynDouble rate, NeuronID N_presenting, NeuronID N_subpresenting,
 				  AurynFloat duration, AurynFloat interval, NeuronID stimuli, string outputfilename);
-		void initBuffers(int delaysteps);
+		void initBuffers(AurynTime delaysteps);
 		void generateNoiseAhead(PermutableSpiketrainBuffer* buffer, AurynTime steps);
 
 		void checkAndUpdateTestingProtocol();
@@ -72,6 +82,9 @@ namespace auryn
 
 
 	protected:
+
+		NeuronID x;  // from PoissonGroup
+
 		SpikeContainer pregen_spikes;  // this is used by distribute_spike() to trick PoissonGroup::evolve() into not sending the stuff upwards yet.
 		//SpikeContainer evolve_spikes;  // this is used by PoissonGroup::evolve(). Separate from pregen_spikes for possible future multi-threading.
 		virtual void distribute_spike(NeuronID theSpikingNeuron); ///< Allows the distribution target to be overwritten by sub-classes.
@@ -101,15 +114,25 @@ namespace auryn
 								 string outputfilename = "stimulus.dat" );
 		virtual ~PolychronousPoissonGroup();
 		virtual void evolve();
+		void PGevolve();
+
+		/*! Setter for the firing rate of all neurons. This can be used to change
+		 * the firing rate during the simulation. Note that changes might have a short
+		 * latency due to the internal workings of the simulator. Try avoid setting
+		 * the firing rate in every other timestep because it will reduce performance.
+		 */
+		void set_rate(AurynDouble rate);
+		/*! Standard getter for the firing rate variable. */
+		AurynDouble get_rate();
+		/*! Use this to seed the random number generator. */
+		void seed(unsigned int s);
 
 		vector<PatternID> get_stimuli_immediate();
-
-		virtual void seed(int s);
 
 		PatternID getNumPatterns();
 		AurynTime getMaxPatternDuration();
 		void setMaxPatternDuration(AurynTime max_patternDuration);
-		AurynTime getMaxPatternInterval() ;
+		AurynTime getMaxPatternInterval();
 		void setMaxPatternInterval(AurynTime max_patternInterval);
 
 		template<typename T> class CompareIndicesByAnotherVectorValues
@@ -124,16 +147,7 @@ namespace auryn
 		void setTestingProtocol(vector<AurynFloat> testprotocolDurations, vector<AurynFloat> testprotocolPatternintervals);
 
 	};
+
 }
-
-
-
-
 #endif /* POLYCHRONOUSPOISSONGROUP_H_ */
-
-
-
-
-
-
 

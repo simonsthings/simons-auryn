@@ -191,7 +191,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		{
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
 			poisson = new PoissonGroup(Npre, inputpoprate);
-			((PoissonGroup*) (poisson))->seed(simparams.get<int>("neurongroups.inputs.randomseed"));
+			((PoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
 		}
 		else if ("FileInputGroup" == requestedNeuronGroupClass)
 		{
@@ -207,7 +207,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
 			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
 			poisson = new StructuredPoissonGroup(Npre, patDuration, patInterval, numStimuli, inputpoprate, patOccurrencesFilename);
-			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<int>("neurongroups.inputs.randomseed"));
+			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
 		}
 		else if ("PolychronousPoissonGroup" == requestedNeuronGroupClass)
 		{
@@ -370,7 +370,7 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 		AurynFloat maxweight = simparams.get<float>("connectionsets.con1.maximumweight"); //1.0f;
 		TransmitterType transmitter = GLUT;
 
-		int STDPruleID = 1;
+		int STDPruleID = 0;
 
 		switch (STDPruleID)
 		{
@@ -548,7 +548,8 @@ void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_n
 	tmpstr = simparams.get<string>("general.outfileprefix");
 	tmpstr += ".stimulusdetectionstatistics.txt";
 	int numTrackedNeurons = 1;
-	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, 50, 0, 0);
+	int binsize_patternPresentations = 50;
+	StimulusResponseMonitor* srm = new StimulusResponseMonitor((PolychronousPoissonGroup *) poisson, detector_neuron, tmpstr, binsize_patternPresentations, 0, 0);
 
 
 

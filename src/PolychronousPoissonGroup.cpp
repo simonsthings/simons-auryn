@@ -9,11 +9,13 @@
 
 using namespace auryn;
 
+boost::mt19937 PolychronousPoissonGroup::gen_PPG = boost::mt19937();
+
 PolychronousPoissonGroup::PolychronousPoissonGroup(NeuronID N_total, NeuronID N_presenting, NeuronID N_subpresenting,
-		AurynFloat duration, AurynFloat interval, NeuronID num_stimuli,  AurynDouble rate, string outputfilename) : PoissonGroup(N_total,rate)
+												   AurynFloat duration, AurynFloat interval, NeuronID num_stimuli,  AurynDouble rate, string outputfilename) : SpikingGroup(N_total)
 {
 	//PolychronousPoissonGroup::N_total = size;  // rename the size var for internal use
-	init(N_presenting,N_subpresenting,duration,interval,num_stimuli,outputfilename);
+	init(rate,N_presenting,N_subpresenting,duration,interval,num_stimuli,outputfilename);
 }
 
 PolychronousPoissonGroup::~PolychronousPoissonGroup()
@@ -23,9 +25,11 @@ PolychronousPoissonGroup::~PolychronousPoissonGroup()
 	}
 }
 
-void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresenting,
-		AurynFloat duration, AurynFloat interval, NeuronID stimuli, string outputfilename)
+void PolychronousPoissonGroup::init(AurynDouble rate, NeuronID N_presenting, NeuronID N_subpresenting,
+									AurynFloat duration, AurynFloat interval, NeuronID stimuli, string outputfilename)
 {
+	auryn::sys->register_spiking_group(this);
+
 	PolychronousPoissonGroup::N_presenting = N_presenting;
 	PolychronousPoissonGroup::N_subpresenting = N_subpresenting;
 
@@ -44,10 +48,6 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 
 	representedValues.push_back(0.5);
 
-
-	initBuffers(max_patternDuration);
-
-
 	// state information:
 	stimulus_active = false;
 	current_stimulus = 0;
@@ -61,6 +61,23 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 		<< patternInterval;
 	logger->msg(oss.str(),NOTIFICATION);
 
+//	if ( evolve_locally() )
+//	{
+
+	logger->msg("Now setting up the random stuff...",NOTIFICATION);
+	logger->parameter("numPatterns", (int)numPatterns);
+
+	dist_PPG = new boost::uniform_01<>();
+
+	die_PPG = new boost::variate_generator<boost::mt19937 &, boost::uniform_01<> >(PolychronousPoissonGroup::gen_PPG, *dist_PPG);
+	salt = sys->get_seed();
+	seed(sys->get_seed());
+	x = 0;
+	set_rate( rate );
+
+
+	logger->msg("Finished setting up the random stuff.",NOTIFICATION);
+//	}
 
 	patterntimesfilename = outputfilename;
 	if ( evolve_locally() && !outputfilename.empty()  ) {
@@ -68,7 +85,7 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 		patterntimesfile.open(outputfilename.c_str(),ios::out);
 		if (!patterntimesfile) {
 			stringstream oss2;
-			oss2 << "StructuredPoissonGroup:: Can't open output file " << outputfilename;
+			oss2 << "PolychronousPoissonGroup:: Can't open output file " << outputfilename;
 			logger->msg(oss2.str(),ERROR);
 			exit(1);
 		}
@@ -76,18 +93,23 @@ void PolychronousPoissonGroup::init(NeuronID N_presenting, NeuronID N_subpresent
 		patterntimesfile.precision(log(auryn_timestep)/log(10)+1 );
 	}
 
+	// should be at the end of the init function:
+	initBuffers(max_patternDuration);
 }
 
-void PolychronousPoissonGroup::seed(int s)
+void PolychronousPoissonGroup::seed(unsigned int s)
 {
-	PoissonGroup::seed(s);
-	initBuffers(max_patternDuration);
+	std::stringstream oss;
+	oss << "PolychronousPoissonGroup:: Seeding rank " << sys->mpi_rank() << " with seed " << s;
+	logger->msg(oss.str(),NOTIFICATION);
+
+	gen_PPG.seed( s + salt );
 }
 
 
 
 // Done:
-void PolychronousPoissonGroup::initBuffers(int delaysteps)
+void PolychronousPoissonGroup::initBuffers(AurynTime delaysteps)
 {
 	buffers.clear();
 
@@ -103,7 +125,7 @@ void PolychronousPoissonGroup::initBuffers(int delaysteps)
 	for (int bi = 0; bi < (numBuffers); ++bi)
 	{
 		PermutableSpiketrainBuffer* theBuffer = &buffers[bi];
-		PolychronousPoissonGroup::constructNextBufferContents(theBuffer);
+		constructNextBufferContents(theBuffer);
 	}
 	current_read_buffer = 1;
 	current_write_buffer = 1;
@@ -117,7 +139,7 @@ void PolychronousPoissonGroup::generateNoiseAhead(PermutableSpiketrainBuffer* bu
 	for (AurynTime ti = 0 ; ti < steps ; ++ti)
 	{
 		pregen_spikes.clear();
-		PoissonGroup::evolve();
+		PGevolve();
 		buffer->setSpikes(&pregen_spikes);
 	}
 }
@@ -152,8 +174,8 @@ void PolychronousPoissonGroup::argsort(vector<AurynTime>* unorderedLatencies, Sp
 	//const vector<AurynTime> &v = (*unorderedLatencies);
 	// sort indexes based on comparing values in v
 	//sort(orderingIndices->begin(), orderingIndices->end(), [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
-	auto myComparator = CompareIndicesByAnotherVectorValues<AurynTime>(unorderedLatencies);
-	sort(orderingIndices->begin(), orderingIndices->end(), myComparator );
+	const CompareIndicesByAnotherVectorValues <AurynTime> &myComparator = CompareIndicesByAnotherVectorValues<AurynTime>(unorderedLatencies);
+	std::sort(orderingIndices->begin(), orderingIndices->end(), myComparator );
 	//sort(orderingIndices->begin(), orderingIndices->end(), CompareIndicesByAnotherVectorValues<AurynTime>(unorderedLatencies) );
 }
 
@@ -339,7 +361,7 @@ void PolychronousPoissonGroup::evolve()
 //			{
 //				// this could probably be sped up by direct implementation:
 //				pregen_spikes.clear();
-//				PoissonGroup::evolve();
+//				PGevolve();
 //				buffers[current_write_buffer].setSpikes(&pregen_spikes);
 //			}
 
@@ -355,7 +377,7 @@ void PolychronousPoissonGroup::evolve()
 	else
 	{
 		// just generate newrandom data:
-		PoissonGroup::evolve();
+		PGevolve();
 		//pregen_spikes.clear(); // temporarily for debugging
 	}
 
@@ -370,6 +392,27 @@ void PolychronousPoissonGroup::evolve()
 }
 
 
+void PolychronousPoissonGroup::set_rate(AurynDouble  rate)
+{
+	cout << "The rate is being set to " << rate << "Hz." << endl;
+	lambda_PPG = 1.0/(1.0/rate-auryn_timestep);
+	if ( evolve_locally() ) {
+		if ( rate > 0.0 ) {
+			AurynDouble r = -log((*die_PPG)()+1e-128)/lambda_PPG;
+			x = (NeuronID)(r/auryn_timestep+0.5);
+		} else {
+			// if the rate is zero this triggers one spike at the end of time/groupsize
+			// this is the easiest way to take care of the zero rate case, which should
+			// be avoided in any case.
+			x = std::numeric_limits<NeuronID>::max();
+		}
+	}
+	cout << "In accordance with the sim time step, lambda_PPG has become " << lambda_PPG << " ." << endl;
+}
+AurynDouble  PolychronousPoissonGroup::get_rate()
+{
+	return lambda_PPG;
+}
 
 vector<PatternID> PolychronousPoissonGroup::get_stimuli_immediate()
 {
@@ -434,6 +477,23 @@ void PolychronousPoissonGroup::checkAndUpdateTestingProtocol()
 
 
 
+void PolychronousPoissonGroup::PGevolve()
+{
+	while ( x < get_rank_size() ) {
+		//cout << " n" << x;
+		distribute_spike ( x );
+
+		AurynDouble r = -log((*die_PPG)()+1e-128)/lambda_PPG;
+		//cout << " r" << r;
+		//cout << " l" << lambda_PPG;
+//		AurynDouble r = 20;
+		// we add 1.5: one to avoid two spikes per bin and 0.5 to
+		// compensate for rounding effects from casting
+		x += (NeuronID)(r/auryn_timestep+1.5);
+		// beware one induces systematic error that becomes substantial at high rates, but keeps neuron from spiking twice per time-step
+	}
+	x -= get_rank_size();
+}
 
 
 
