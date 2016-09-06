@@ -72,6 +72,10 @@
 #include "auryn/TripletScalingConnection.h"
 #include "auryn/IdentityConnection.h"
 #include "auryn/AllToAllConnection.h"
+#include "GeneralAlltoallSTDPConnection.h"
+
+// Weight Dependence definitions
+#include "STDPWeightDependence.h"
 
 // Spiking and input group definitions
 #include "auryn/SpikingGroup.h"
@@ -113,6 +117,7 @@
 #include "auryn/Monitor.h"
 #include "TimespanMonitor.h"
 #include "IzhiMonitor.h"
+#include "StimulusResponseMonitor.h"
 #include "auryn/VoltageMonitor.h"
 #include "auryn/SpikeMonitor.h"
 #include "auryn/BinarySpikeMonitor.h"

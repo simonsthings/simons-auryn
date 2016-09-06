@@ -21,7 +21,6 @@
 #include "../src/auryn/System.h"
 #include <ctime>
 #include <boost/property_tree/json_parser.hpp>
-#include <StimulusResponseMonitor.h>
 
 using namespace std;
 using namespace auryn;
@@ -29,16 +28,16 @@ using namespace auryn;
 namespace po = boost::program_options;
 namespace mpi = boost::mpi;
 
-void defineDefaultParameters(boost::property_tree::ptree const& pt);
-void print(boost::property_tree::ptree const& pt, string indent );
-float getSamplinginterval(boost::property_tree::ptree const& pt, string path);
-void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tree::ptree & simparams);
-//void setupHistoryTracking(SpikingGroup* poisson, NeuronGroup* detector_neuron, STDPConnection* con1, const boost::property_tree::ptree& simparams);
-SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams);
-NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams);
-DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_neuron, const boost::property_tree::ptree& simparams);
-void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams);
-int main(int ac, char* av[]);
+//void defineDefaultParameters(boost::property_tree::ptree const& pt);
+//void print(boost::property_tree::ptree const& pt, string indent );
+//float getSamplinginterval(boost::property_tree::ptree const& pt, string path);
+//void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tree::ptree & simparams);
+// //void setupHistoryTracking(SpikingGroup* poisson, NeuronGroup* detector_neuron, GeneralAlltoallSTDPConnection* con1, const boost::property_tree::ptree& simparams);
+//SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams);
+//NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams);
+//DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_neuron, const boost::property_tree::ptree& simparams);
+//void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams);
+//int main(int ac, char* av[]);
 
 
 
@@ -172,7 +171,7 @@ template <typename T>
 std::vector<T> as_vector(boost::property_tree::ptree const& pt, boost::property_tree::ptree::key_type const& key)
 {
 	std::vector<T> r;
-	for (auto& item : pt.get_child(key))
+	for (const auto& item : pt.get_child(key))
 		r.push_back(item.second.get_value<T>());
 	return r;
 }
@@ -220,7 +219,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
 			poisson = new PolychronousPoissonGroup(Npre, Npre_presenting, Npre_subpresenting, patDuration, patInterval, numStimuli, inputpoprate,
 					patOccurrencesFilename);
-			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<int>("neurongroups.inputs.randomseed"));
+			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
 
 
 			for (auto i : as_vector<AurynFloat>(simparams, "general.testingProtocol.durations")) std::cout << i << ' ';
@@ -350,7 +349,7 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
 
 }
 
-DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_neuron, const boost::property_tree::ptree& simparams)
+DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* postsynaptic_group, const boost::property_tree::ptree& simparams)
 {
 	DuplexConnection* con1;
 
@@ -359,7 +358,7 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 
 		// END neuron groups & settings.
 		// BEGIN Connections & settings:
-		AurynWeight weight = simparams.get<float>("connectionsets.con1.initialweight"); //0.1;
+		AurynWeight initialweight = simparams.get<float>("connectionsets.con1.initialweight"); //0.1;
 		//AurynFloat sparseness = 0.99999999;
 		AurynFloat sparseness = 1.0;
 		AurynFloat learningrate = simparams.get<float>("connectionsets.con1.stdprule.learningrate"); //0.01;  // learningrate (?)
@@ -370,13 +369,13 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 		AurynFloat maxweight = simparams.get<float>("connectionsets.con1.maximumweight"); //1.0f;
 		TransmitterType transmitter = GLUT;
 
-		int STDPruleID = 0;
+		int STDPruleID = 2;
 
 		switch (STDPruleID)
 		{
 			case 0:
 			{
-				STDPConnection* theConn = new STDPConnection(poisson, detector_neuron, weight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
+				STDPConnection* theConn = new STDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
 				double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
 				theConn->A *= A_minus;// *dt/ms;
 				theConn->B *= A_plus;// *dt/ms;
@@ -384,7 +383,7 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 			};break;
 			case 1:
 			{
-				STDPwdConnection* theConn = new STDPwdConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
+				STDPwdConnection* theConn = new STDPwdConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
 				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
 				theConn->set_mu_plus(1.0);
 				theConn->set_mu_minus(1.0);
@@ -392,11 +391,23 @@ DuplexConnection* setupConnection(SpikingGroup* poisson, NeuronGroup* detector_n
 			};break;
 			case 2:
 			{
-//				STDPlsConnection* theConn = new STDPlsConnection(poisson, detector_neuron, weight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
-				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
-				//theConn->set_mu_plus(0.0);
-				//theConn->set_mu_minus(0.0);
-//				con1 = theConn;
+				AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets.con1.stdprule.weightdependence.attractorStrengthIndicator");
+				AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets.con1.stdprule.weightdependence.attractorLocationIndicator");
+				LinearWeightDependence* theWeightDependence = new LinearWeightDependence(maxweight, attractorStrengthIndicator, attractorLocationIndicator);
+
+				//GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
+				GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, transmitter, "generalweightdependentSTDP");
+				double ms = 1e-3;  // Millisecond scale. Need to find a pretty way of handling this.
+
+				theConn->setLearningrate(learningrate);
+				theConn->setScale_pre(A_minus);// *dt/ms;
+				theConn->setScale_post(A_plus);// *dt/ms;
+				theConn->setTau_pre(tau_pre);
+				theConn->setTau_post(tau_post);
+				theConn->setMaxweight(maxweight);
+				theConn->setWeightDependence(theWeightDependence);
+
+				con1 = theConn;
 			};break;
 			default:
 			{

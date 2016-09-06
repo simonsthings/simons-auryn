@@ -12,6 +12,6 @@ script:
 notifications:
     email:
         recipients: 
-            - fzenke@stanford.edu
+            - simonsunimail@gmail.com
         on_success: change
         on_failure: always
