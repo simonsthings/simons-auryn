@@ -17,23 +17,22 @@ namespace auryn
 	 */
 	class STDPWeightDependence
 	{
-	private:
+	public:
+		/// Public fields (because why not):
+		AurynFloat scaleconstant_PreBeforePost;
+		AurynFloat scaleconstant_PreAfterPost;
 
-	protected:
 		AurynWeight w_max;
 		std::string rule_name;
 
-	public:
-		STDPWeightDependence();
-		STDPWeightDependence(AurynWeight w_max);
-		virtual AurynDouble applyLTPscaling(AurynWeight *pDouble)=0;
-		virtual AurynDouble applyLTDscaling(AurynWeight *pDouble)=0;
-		AurynWeight getW_max() const;
+		/// Constructors:
+		STDPWeightDependence(AurynWeight w_max=1, AurynFloat scale_LTP=1, AurynFloat scale_LTD=1);
+		virtual ~STDPWeightDependence();
+		virtual AurynDouble scalePreBeforePost(AurynWeight *pDouble)=0;
+		virtual AurynDouble scalePreAfterPost(AurynWeight *pDouble)=0;
 	};
 
 }
 
-
-
-
 #endif //AURYN_STDPWEIGHTDEPENDENCE_H
+

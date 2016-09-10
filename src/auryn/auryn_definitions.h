@@ -80,7 +80,7 @@
  * instead of regular division. However, the effect of this is presumably
  * negligible, but I am keeping this for hystoric reasons.
  */ 
-#define MINDELAY 8
+#define MINDELAY 1
 
 /*! \brief Groups with an effective size smaller than this will not be
  * distributed. 

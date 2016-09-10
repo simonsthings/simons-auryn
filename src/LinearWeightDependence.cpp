@@ -8,18 +8,29 @@ using namespace auryn;
 
 
 /* Linear weight dependence with given slopes: */
-LinearWeightDependence::LinearWeightDependence(AurynWeight w_max, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator)
-		: STDPWeightDependence(w_max), attractorStrengthIndicator(theAttractorStrengthIndicator), attractorLocationIndicator(theAttractorLocationIndicator)
+LinearWeightDependence::LinearWeightDependence(AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator)
+		: attractorStrengthIndicator(theAttractorStrengthIndicator), attractorLocationIndicator(theAttractorLocationIndicator)
 {
-	fudge_LTP = attractorStrengthIndicator+0.5f*w_max-(w_max-attractorLocationIndicator)*attractorStrengthIndicator;
-	fudge_LTD = attractorStrengthIndicator+0.5f*w_max-(attractorLocationIndicator)*attractorStrengthIndicator;
+	compute_fudge();
 }
-AurynDouble LinearWeightDependence::applyLTPscaling(AurynWeight *weight)
+LinearWeightDependence::LinearWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator)
+		: STDPWeightDependence(w_max,scale_LTP,scale_LTD), attractorStrengthIndicator(theAttractorStrengthIndicator), attractorLocationIndicator(theAttractorLocationIndicator)
 {
-	return (w_max - *weight) * fudge_LTP ;
+	compute_fudge();
 }
-AurynDouble LinearWeightDependence::applyLTDscaling(AurynWeight *weight)
+void LinearWeightDependence::compute_fudge()
 {
-	return (*weight) * fudge_LTD ;
+	fudge_LTP = 0.5f*w_max-(w_max-attractorLocationIndicator)*attractorStrengthIndicator;
+	fudge_LTD = 0.5f*w_max-(attractorLocationIndicator)*attractorStrengthIndicator;
 }
+AurynDouble LinearWeightDependence::scalePreBeforePost(AurynWeight *weight)
+{
+	return scaleconstant_PreBeforePost * ( (w_max - *weight) * attractorStrengthIndicator + fudge_LTP );
+}
+AurynDouble LinearWeightDependence::scalePreAfterPost(AurynWeight *weight)
+{
+	return scaleconstant_PreAfterPost  * ( (*weight) * attractorStrengthIndicator + fudge_LTD );
+}
+
+
 

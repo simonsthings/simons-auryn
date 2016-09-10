@@ -176,50 +176,50 @@ std::vector<T> as_vector(boost::property_tree::ptree const& pt, boost::property_
 	return r;
 }
 
-SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams)
+SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams, string inputgroupIDstring)
 {
 	SpikingGroup* poisson;
 
 	try
 	{
 
-		NeuronID Npre = simparams.get<NeuronID>("neurongroups.inputs.N");
-		string requestedNeuronGroupClass = simparams.get<string>("neurongroups.inputs.type");
+		NeuronID Npre = simparams.get<NeuronID>("neurongroups."+inputgroupIDstring+".N");
+		string requestedNeuronGroupClass = simparams.get<string>("neurongroups."+inputgroupIDstring+".type");
 		cout << "The requested input group is: " << requestedNeuronGroupClass << endl;
 		if ("PoissonGroup" == requestedNeuronGroupClass)
 		{
-			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
+			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
 			poisson = new PoissonGroup(Npre, inputpoprate);
-			((PoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
+			((PoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
 		}
 		else if ("FileInputGroup" == requestedNeuronGroupClass)
 		{
-			string inputRASfile = simparams.get<string>("neurongroups.inputs.rasfilename");
+			string inputRASfile = simparams.get<string>("neurongroups."+inputgroupIDstring+".rasfilename");
 			cout << "The input RAS file: " << inputRASfile << endl;
 			poisson = new FileInputGroup(Npre, inputRASfile,false,0.0);
 		}
 		else if ("StructuredPoissonGroup" == requestedNeuronGroupClass)
 		{
-			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups.inputs.patternduration");
-			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups.inputs.patterninterval");
-			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups.inputs.numberofstimuli");
-			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
-			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
+			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patternduration");
+			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patterninterval");
+			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
+			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
+			string patOccurrencesFilename = simparams.get<string>("neurongroups."+inputgroupIDstring+".patternOccurrencesFilename");
 			poisson = new StructuredPoissonGroup(Npre, patDuration, patInterval, numStimuli, inputpoprate, patOccurrencesFilename);
-			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
+			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
 		}
 		else if ("PolychronousPoissonGroup" == requestedNeuronGroupClass)
 		{
-			NeuronID Npre_presenting = simparams.get<NeuronID>("neurongroups.inputs.N_presenting");
-			NeuronID Npre_subpresenting = simparams.get<NeuronID>("neurongroups.inputs.N_subpresenting");
-			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups.inputs.patternduration");
-			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups.inputs.patterninterval");
-			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups.inputs.numberofstimuli");
-			AurynDouble inputpoprate = simparams.get<double>("neurongroups.inputs.rate");
-			string patOccurrencesFilename = simparams.get<string>("neurongroups.inputs.patternOccurrencesFilename");
+			NeuronID Npre_presenting = simparams.get<NeuronID>("neurongroups."+inputgroupIDstring+".N_presenting");
+			NeuronID Npre_subpresenting = simparams.get<NeuronID>("neurongroups."+inputgroupIDstring+".N_subpresenting");
+			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patternduration");
+			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patterninterval");
+			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
+			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
+			string patOccurrencesFilename = simparams.get<string>("neurongroups."+inputgroupIDstring+".patternOccurrencesFilename");
 			poisson = new PolychronousPoissonGroup(Npre, Npre_presenting, Npre_subpresenting, patDuration, patInterval, numStimuli, inputpoprate,
 					patOccurrencesFilename);
-			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups.inputs.randomseed"));
+			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
 
 
 			for (auto i : as_vector<AurynFloat>(simparams, "general.testingProtocol.durations")) std::cout << i << ' ';
@@ -257,17 +257,17 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 	return poisson;
 }
 
-NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams)
+NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams, string outputgroupIDstring)
 {
 	NeuronGroup* postGroup;
 	try
 	{
 
 
-		NeuronID N_post = simparams.get<NeuronID>("neurongroups.outputs.N");
+		NeuronID N_post = simparams.get<NeuronID>("neurongroups."+outputgroupIDstring+".N");
 		Izhikevich2003Group* detector_neuron = new Izhikevich2003Group(N_post);
-		detector_neuron->set_projMult( simparams.get<float>("neurongroups.outputs.projMult") );
-		detector_neuron->use_recovery = simparams.get<bool>("neurongroups.outputs.userecovery");
+		detector_neuron->set_projMult( simparams.get<float>("neurongroups."+outputgroupIDstring+".projMult") );
+		detector_neuron->use_recovery = simparams.get<bool>("neurongroups."+outputgroupIDstring+".userecovery");
 
 		cout << "IzhikevichGroup.projMult: " << detector_neuron->get_projMult() << endl;
 		cout << "IzhikevichGroup.use_recovery: " << detector_neuron->use_recovery << endl;
@@ -349,71 +349,106 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
 
 }
 
-DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* postsynaptic_group, const boost::property_tree::ptree& simparams)
+STDPWeightDependence* setupWeightDependence(const boost::property_tree::ptree& simparams, string connectionIDstring)
+{
+	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
+
+	AurynFloat maxweight = simparams.get<float>("connectionsets."+connectionIDstring+".maximumweight"); //1.0f;
+	AurynFloat learningrate = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.learningrate"); //0.01;  // learningrate (?)
+	AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
+	AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
+
+	AurynFloat scaleconstant_plus = learningrate * A_plus;
+	AurynFloat scaleconstant_minus = learningrate * A_minus;
+
+	STDPWeightDependence* theWeightDependence;
+
+	if (type == "AdditiveWeightDependence")
+	{
+		AdditiveWeightDependence* wd = new AdditiveWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus);
+		theWeightDependence = wd;
+	}
+	else if (type == "LinearWeightDependence")
+	{
+		AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorStrengthIndicator");
+		AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorLocationIndicator");
+		LinearWeightDependence* wd = new LinearWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
+		theWeightDependence = wd;
+	}
+	else if (type == "Guetig2003WeightDependence")
+	{
+		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
+		Guetig2003WeightDependence* wd = new Guetig2003WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu);
+		theWeightDependence = wd;
+	}
+	else if (type == "Morrison2007WeightDependence")
+	{
+		AurynFloat mu_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_plus");
+		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
+		Morrison2007WeightDependence* wd = new Morrison2007WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu_plus, mu_minus);
+		theWeightDependence = wd;
+	}
+	else
+	{
+		throw std::invalid_argument( "Unknown type of Weight Dependence class. (maybe change implementation anyway?)" );
+	}
+
+	return theWeightDependence;
+}
+
+
+DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* postsynaptic_group, const boost::property_tree::ptree& simparams, string connectionIDstring)
 {
 	DuplexConnection* con1;
 
 	try
 	{
 
-		// END neuron groups & settings.
-		// BEGIN Connections & settings:
-		AurynWeight initialweight = simparams.get<float>("connectionsets.con1.initialweight"); //0.1;
+		AurynWeight initialweight = simparams.get<float>("connectionsets."+connectionIDstring+".initialweight"); //0.1;
+		AurynFloat maxweight = simparams.get<float>("connectionsets."+connectionIDstring+".maximumweight"); //1.0f;
+		TransmitterType transmitter = GLUT;
 		//AurynFloat sparseness = 0.99999999;
 		AurynFloat sparseness = 1.0;
-		AurynFloat learningrate = simparams.get<float>("connectionsets.con1.stdprule.learningrate"); //0.01;  // learningrate (?)
-		AurynFloat A_plus = simparams.get<float>("connectionsets.con1.stdprule.A_plus");
-		AurynFloat A_minus = simparams.get<float>("connectionsets.con1.stdprule.A_minus");
-		AurynFloat tau_pre = simparams.get<float>("connectionsets.con1.stdprule.tau_plus");
-		AurynFloat tau_post = simparams.get<float>("connectionsets.con1.stdprule.tau_minus");
-		AurynFloat maxweight = simparams.get<float>("connectionsets.con1.maximumweight"); //1.0f;
-		TransmitterType transmitter = GLUT;
 
-		int STDPruleID = 2;
+		AurynFloat learningrate = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.learningrate"); //0.01;  // learningrate (?)
+		AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
+		AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
+		AurynFloat tau_pre = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.tau_plus");
+		AurynFloat tau_post = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.tau_minus");
 
-		switch (STDPruleID)
+
+		const string &connectiontype = simparams.get<string>("connectionsets."+connectionIDstring+".type");
+
+		if (connectiontype == "STDPConnection")
 		{
-			case 0:
-			{
-				STDPConnection* theConn = new STDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
-				double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
-				theConn->A *= A_minus;// *dt/ms;
-				theConn->B *= A_plus;// *dt/ms;
-				con1 = theConn;
-			};break;
-			case 1:
-			{
-				STDPwdConnection* theConn = new STDPwdConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
-				//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
-				theConn->set_mu_plus(1.0);
-				theConn->set_mu_minus(1.0);
-				con1 = theConn;
-			};break;
-			case 2:
-			{
-				AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets.con1.stdprule.weightdependence.attractorStrengthIndicator");
-				AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets.con1.stdprule.weightdependence.attractorLocationIndicator");
-				LinearWeightDependence* theWeightDependence = new LinearWeightDependence(maxweight, attractorStrengthIndicator, attractorLocationIndicator);
-
-				//GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
-				GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, transmitter, "generalweightdependentSTDP");
-				double ms = 1e-3;  // Millisecond scale. Need to find a pretty way of handling this.
-
-				theConn->setLearningrate(learningrate);
-				theConn->setScale_pre(A_minus);// *dt/ms;
-				theConn->setScale_post(A_plus);// *dt/ms;
-				theConn->setTau_pre(tau_pre);
-				theConn->setTau_post(tau_post);
-				theConn->setMaxweight(maxweight);
-				theConn->setWeightDependence(theWeightDependence);
-
-				con1 = theConn;
-			};break;
-			default:
-			{
-				throw std::invalid_argument( "received invalid STDPruleID." );
-			};break;
+			STDPConnection* theConn = new STDPConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, tau_pre, tau_post, maxweight, transmitter, "testSTDP");
+			double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
+			theConn->A *= A_minus;// *dt/ms;
+			theConn->B *= A_plus;// *dt/ms;
+			con1 = theConn;
 		}
+		else if (connectiontype == "STDPwdConnection")
+		{
+			STDPwdConnection* theConn = new STDPwdConnection(presynaptic_group, postsynaptic_group, initialweight, sparseness, learningrate, maxweight, transmitter, "testSTDP");
+			//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
+			theConn->set_mu_plus(1.0);
+			theConn->set_mu_minus(1.0);
+			con1 = theConn;
+		}
+		else if (connectiontype == "GeneralAlltoallSTDPConnection")
+		{
+			STDPWeightDependence* theWeightDependence = setupWeightDependence(simparams, connectionIDstring);
+			GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, maxweight, theWeightDependence);
+			theConn->setTau_pre(tau_pre);
+			theConn->setTau_post(tau_post);
+			theConn->set_max_weight(maxweight);
+			con1 = theConn;
+		}
+		else
+		{
+			throw std::invalid_argument( "Unknown type of Connection class. (maybe change implementation anyway?)" );
+		}
+
 
 	}
 	catch(exception& e) {
@@ -639,20 +674,20 @@ int main(int ac, char* av[])
 
 
 	// BEGIN neuron groups & settings:
-	SpikingGroup* poisson = setupPresynapticGroup(simparams);
-	NeuronGroup* detector_neuron = setupPostsynapticGroup(simparams);
+	SpikingGroup* sourcegroup = setupPresynapticGroup(simparams, "inputs");
+	NeuronGroup* destinationgroup = setupPostsynapticGroup(simparams,"outputs");
 	// END neuron groups & settings.
 
 
 
 	// BEGIN Connections & settings:
-	DuplexConnection* con1 = setupConnection(poisson, detector_neuron, simparams);
+	DuplexConnection* con1 = setupConnection(sourcegroup, destinationgroup, simparams, "con1");
 	// END Connections & settings.
 
 
 
 	// BEGIN History setup (writing to disk):
-	setupHistoryTracking(poisson, detector_neuron, con1, simparams);
+	setupHistoryTracking(sourcegroup, destinationgroup, con1, simparams);
 	// END History setup (writing to disk).
 
 

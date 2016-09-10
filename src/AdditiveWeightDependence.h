@@ -9,18 +9,17 @@
 
 namespace auryn
 {
-	/** \brief Scales synaptic weight updates by the exponential rule of Morrison2007 or even the Gütig2003 rule.
+	/** \brief This rule produces additive STDP, so there is actually no dependence on the given weight.
 	 *
+	 * Only the given scale constants for each side of the STDP rule are returned by calls to scalePreBeforePost() and scalePreAfterPost().
 	 */
 	class AdditiveWeightDependence : public STDPWeightDependence
 	{
-		AurynFloat scale_LTP;
-		AurynFloat scale_LTD;
 
 	public:
-		AdditiveWeightDependence(AurynWeight w_max, AurynFloat scale_LTP=1, AurynFloat scale_LTD=1);
-		virtual AurynDouble applyLTPscaling(AurynWeight *pDouble);
-		virtual AurynDouble applyLTDscaling(AurynWeight *pDouble);
+		AdditiveWeightDependence(AurynWeight w_max=1, AurynFloat scale_LTP=1, AurynFloat scale_LTD=1);
+		virtual AurynDouble scalePreBeforePost(AurynWeight *pDouble);
+		virtual AurynDouble scalePreAfterPost(AurynWeight *pDouble);
 	};
 }
 

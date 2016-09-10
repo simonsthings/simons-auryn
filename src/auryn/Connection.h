@@ -122,7 +122,7 @@ public:
 	 * The name will appear in error messages and save files */
 	void set_name(std::string name);
 
-	/*! \brief Returns name of connection */
+	virtual /*! \brief Returns name of connection */
 	std::string get_name();
 
 	/*! \brief Extracts the class name of the connection from the file name */

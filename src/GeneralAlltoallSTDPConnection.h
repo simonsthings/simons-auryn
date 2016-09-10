@@ -46,65 +46,50 @@ class GeneralAlltoallSTDPConnection : public DuplexConnection
 {
 
 private:
-	void init(AurynFloat eta, AurynFloat tau_pre, AurynFloat tau_post, AurynFloat maxweight, STDPWeightDependence *the_weight_dependence);
+	//AurynFloat learningrate; /** Used to update the scaling factors in the weight dependence class */
+	//AurynFloat A_minus; /*!< Amplitude of post-pre part of the STDP window */
+	//AurynFloat A_plus; /*!< Amplitude of pre-post part of the STDP window */
 
 protected:
 
-	AurynDouble hom_fudge;
-
+	AurynFloat tau_pre;
+	AurynFloat tau_post;
 	Trace * tr_pre;
 	Trace * tr_post;
 
 	void propagate_forward();
 	void propagate_backward();
 
-	AurynWeight dw_pre(NeuronID post);
-	AurynWeight dw_post(NeuronID pre);
+	AurynWeight get_postspikememory(NeuronID postspiker);
+	AurynWeight get_prespikememory(NeuronID prespiker);
 
 	STDPWeightDependence* weight_dependence;
 
 public:
-
-	AurynFloat scale_pre; /*!< Amplitude of post-pre part of the STDP window */
-	AurynFloat scale_post; /*!< Amplitude of pre-post part of the STDP window */
-
 	bool stdp_active;
 
-	GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-			TransmitterType transmitter=GLUT);
+	/** Creates a new connection with a default additive STDP rule. */
+	GeneralAlltoallSTDPConnection(SpikingGroup *source, NeuronGroup *destination);
 
-	GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-			const char * filename, 
-			AurynFloat eta=1, 
-			AurynFloat tau_pre=20e-3,
-			AurynFloat tau_post=20e-3,
-			AurynFloat maxweight=1. , 
-			TransmitterType transmitter=GLUT);
-
-	GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-			AurynWeight weight, AurynFloat sparseness=0.05, 
-			AurynFloat eta=1, 
-			AurynFloat tau_pre=20e-3,
-			AurynFloat tau_post=20e-3,
-			AurynFloat maxweight=1. , 
-			TransmitterType transmitter=GLUT,
-			string name = "GeneralAlltoallSTDPConnection" );
-
-	GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-								  AurynWeight initialweight,
-								  AurynFloat sparseness = 1,
-								  TransmitterType transmitter=GLUT,
-								  string name = "GeneralAlltoallSTDPConnection");
+	/** Creates a new connection with a given weight dependence rule. */
+	GeneralAlltoallSTDPConnection(SpikingGroup *source, NeuronGroup *destination, AurynWeight initialweight, AurynWeight maxweight,
+								  STDPWeightDependence *theWeightDependence, AurynFloat tau_pre=20e-3, AurynFloat tau_post=20e-3, AurynFloat sparseness=1.0,
+								  TransmitterType transmitter=GLUT);
 
 	virtual ~GeneralAlltoallSTDPConnection();
-	virtual void finalize();
+	virtual void finalize() override;
 	void free();
 
-	virtual void propagate();
-	virtual void evolve();
+	virtual void propagate() override;
+	virtual void evolve() override;
 
-	void setWeight_dependence(STDPWeightDependence *weight_dependence);
-	STDPWeightDependence *getWeight_dependence() const;
+	virtual string get_name() override;
+
+	virtual void set_max_weight(AurynWeight maximum_weight) override;
+
+	void setTau_pre(AurynFloat tau_pre);
+	void setTau_post(AurynFloat tau_post);
+
 };
 
 }

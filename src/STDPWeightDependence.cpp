@@ -6,20 +6,14 @@
 
 using namespace auryn;
 
-STDPWeightDependence::STDPWeightDependence(AurynWeight w_max) : w_max(w_max)
+STDPWeightDependence::STDPWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD)
+		: w_max(w_max), scaleconstant_PreBeforePost(scale_LTP), scaleconstant_PreAfterPost(scale_LTD)
 {
 }
 
-AurynWeight STDPWeightDependence::getW_max() const
+STDPWeightDependence::~STDPWeightDependence()
 {
-	return w_max;
 }
-
-STDPWeightDependence::STDPWeightDependence()
-{
-
-}
-
 
 
 

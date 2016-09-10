@@ -8,16 +8,19 @@ using namespace auryn;
 
 
 /* Gütig 2003 weight dependence: */
-Guetig2003WeightDependence::Guetig2003WeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat mu)
-		: STDPWeightDependence(w_max), scale_LTP(scale_LTP), scale_LTD(scale_LTD), mu(mu)
+Guetig2003WeightDependence::Guetig2003WeightDependence(AurynFloat mu) : mu(mu)
 {}
-AurynDouble Guetig2003WeightDependence::applyLTPscaling(AurynWeight *weight)
+Guetig2003WeightDependence::Guetig2003WeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat mu)
+		: STDPWeightDependence(w_max,scale_LTP,scale_LTD), mu(mu)
+{}
+AurynDouble Guetig2003WeightDependence::scalePreBeforePost(AurynWeight *weight)
 {
-	return std::pow(1-*weight,mu) * scale_LTP ;
+	return std::pow(1-*weight,mu) * scaleconstant_PreBeforePost ;
 }
-AurynDouble Guetig2003WeightDependence::applyLTDscaling(AurynWeight *weight)
+AurynDouble Guetig2003WeightDependence::scalePreAfterPost(AurynWeight *weight)
 {
-	return std::pow(*weight,mu) * scale_LTD ;
+	return std::pow(*weight,mu) * scaleconstant_PreAfterPost ;
 }
+
 
 

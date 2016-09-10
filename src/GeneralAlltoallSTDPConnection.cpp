@@ -22,83 +22,26 @@
 
 using namespace auryn;
 
-void GeneralAlltoallSTDPConnection::init(AurynFloat eta, AurynFloat tau_pre, AurynFloat tau_post, AurynFloat maxweight, STDPWeightDependence *the_weight_dependence)
+
+GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup *source, NeuronGroup *destination)
+		: GeneralAlltoallSTDPConnection(source, destination, 0.85, 1.0, new AdditiveWeightDependence())
 {
-	if ( dst->get_post_size() == 0 ) return;
+}
 
-	scale_pre = eta; // post-pre
-	scale_post = eta; // pre-post
+GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup *source, NeuronGroup *destination, AurynWeight initialweight, AurynWeight maxweight,
+															 STDPWeightDependence *theWeightDependence, AurynFloat tau_pre, AurynFloat tau_post, AurynFloat sparseness,
+															 TransmitterType transmitter)
+		: DuplexConnection(source, destination, initialweight, sparseness, transmitter, "GeneralAlltoallSTDPConnection"), weight_dependence(theWeightDependence)
+{
+	if ( dst->get_post_size() == 0 ) return;  // not sure how bad this would be if it happens. Taken from class STDPConnection.
 
-	auryn::logger->parameter("eta",eta);
-	auryn::logger->parameter("A",scale_pre);
-	auryn::logger->parameter("B",scale_post);
-
-	tr_pre  = src->get_pre_trace(tau_pre);
-	tr_post = dst->get_post_trace(tau_post);
+	setTau_pre(tau_pre);
+	setTau_post(tau_post);
 
 	set_min_weight(0.0);
 	set_max_weight(maxweight);
 
 	stdp_active = true;
-	weight_dependence = new AdditiveWeightDependence(maxweight, 1, 1);
-}
-
-
-void GeneralAlltoallSTDPConnection::finalize() {
-	DuplexConnection::finalize();
-}
-
-void GeneralAlltoallSTDPConnection::free()
-{
-}
-
-GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination, TransmitterType transmitter) : DuplexConnection(source, destination, transmitter)
-{
-}
-
-GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-		const char * filename, 
-		AurynFloat eta,
-		AurynFloat tau_pre,
-		AurynFloat tau_post,
-		AurynFloat maxweight, 
-		TransmitterType transmitter) 
-: DuplexConnection(source, 
-		destination, 
-		filename, 
-		transmitter)
-{
-	init(eta, tau_pre, tau_post, maxweight, nullptr);
-}
-
-GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup * source, NeuronGroup * destination,
-		AurynWeight weight, AurynFloat sparseness, 
-		AurynFloat eta, 
-		AurynFloat tau_pre,
-		AurynFloat tau_post,
-		AurynFloat maxweight, 
-		TransmitterType transmitter,
-		std::string name) 
-: DuplexConnection(source, 
-		destination, 
-		weight, 
-		sparseness, 
-		transmitter, 
-		name)
-{
-	init(eta, tau_pre, tau_post, maxweight, nullptr);
-	if ( name.empty() )
-		set_name("GeneralAlltoallSTDPConnection");
-}
-
-GeneralAlltoallSTDPConnection::GeneralAlltoallSTDPConnection(SpikingGroup *source, NeuronGroup *destination,
-															 AurynWeight initialweight,
-															 AurynFloat sparseness,
-															 TransmitterType transmitter,
-															 string name)
-		: DuplexConnection(source, destination, initialweight, sparseness, transmitter, name)
-{
-	// Todo: put stuff here!
 }
 
 GeneralAlltoallSTDPConnection::~GeneralAlltoallSTDPConnection()
@@ -108,18 +51,25 @@ GeneralAlltoallSTDPConnection::~GeneralAlltoallSTDPConnection()
 	delete weight_dependence;  // or put this into some general auryn cleanup method?
 }
 
-
-AurynWeight GeneralAlltoallSTDPConnection::dw_pre(NeuronID post)
-{
-	NeuronID translated_spike = dst->global2rank(post); // only to be used for post traces
-	AurynDouble dw = scale_pre*tr_post->get(translated_spike);
-	return dw;
+void GeneralAlltoallSTDPConnection::finalize() {
+	DuplexConnection::finalize();
 }
 
-AurynWeight GeneralAlltoallSTDPConnection::dw_post(NeuronID pre)
+void GeneralAlltoallSTDPConnection::free()
 {
-	AurynDouble dw = scale_post*tr_pre->get(pre);
-	return dw;
+}
+
+
+
+AurynWeight GeneralAlltoallSTDPConnection::get_postspikememory(NeuronID postspiker)
+{
+	NeuronID translated_postspiker = dst->global2rank(postspiker); // only to be used for dst traces
+	return tr_post->get(translated_postspiker);
+}
+
+AurynWeight GeneralAlltoallSTDPConnection::get_prespikememory(NeuronID prespiker)
+{
+	return tr_pre->get(prespiker);
 }
 
 
@@ -127,10 +77,6 @@ void GeneralAlltoallSTDPConnection::propagate_forward()
 {
 	// loop over all spikes
 	for (const NeuronID prespiking : *(src->get_spikes_immediate()) )
-	/*
-	for (SpikeContainer::const_iterator prespiking = src->get_spikes()->begin() ; // prespiking = pre_spike
-			prespiking != src->get_spikes()->end() ; ++prespiking )
-	*/
 	{
 		// loop over all postsynaptic partners
 		for (const NeuronID * c = fwd->get_row_begin(prespiking) ; c != fwd->get_row_end(prespiking) ; ++c )
@@ -144,7 +90,7 @@ void GeneralAlltoallSTDPConnection::propagate_forward()
 			// handle plasticity
 			if ( stdp_active ) {
 				// performs weight update
-			    *weight += dw_pre(*c) * weight_dependence->applyLTDscaling(weight);
+			    *weight += get_postspikememory(*c) * weight_dependence->scalePreAfterPost(weight);
 
 				// clips weights
 				if ( *weight > get_max_weight() ) *weight = get_max_weight(); 
@@ -160,12 +106,6 @@ void GeneralAlltoallSTDPConnection::propagate_backward()
 	if (stdp_active) {
 		// loop over all spikes
 		for (const NeuronID postspiking : *(dst->get_spikes_immediate()) )
-		/*
-		SpikeContainer::const_iterator spikes_end = dst->get_spikes_immediate()->end();
-		for (SpikeContainer::const_iterator postspiking = dst->get_spikes_immediate()->begin() ; // postspiking = post_spike
-				postspiking != spikes_end ;
-				++postspiking )
-		*/
 		{
 			// loop over all presynaptic partners
 			for (const NeuronID * c = bkw->get_row_begin(postspiking) ; c != bkw->get_row_end(postspiking) ; ++c ) {
@@ -177,7 +117,7 @@ void GeneralAlltoallSTDPConnection::propagate_backward()
 
 				// computes plasticity update
 				AurynWeight * weight = bkw->get_data(c); 
-				*weight += dw_post(*c) * weight_dependence->applyLTPscaling(weight);
+				*weight += get_prespikememory(*c) * weight_dependence->scalePreBeforePost(weight);
 
 				// clips weights
 				if ( *weight > get_max_weight() ) *weight = get_max_weight();
@@ -198,14 +138,33 @@ void GeneralAlltoallSTDPConnection::evolve()
 {
 }
 
-STDPWeightDependence *GeneralAlltoallSTDPConnection::getWeight_dependence() const
+void GeneralAlltoallSTDPConnection::setTau_pre(AurynFloat the_tau_pre)
 {
-	return weight_dependence;
+	tau_pre = the_tau_pre;
+	tr_pre  = src->get_pre_trace(tau_pre);
+	auryn::logger->parameter("tau_pre",tau_pre);
 }
 
-void GeneralAlltoallSTDPConnection::setWeight_dependence(STDPWeightDependence *weight_dependence)
+void GeneralAlltoallSTDPConnection::setTau_post(AurynFloat the_tau_post)
 {
-	GeneralAlltoallSTDPConnection::weight_dependence = weight_dependence;
+	tau_post = the_tau_post;
+	tr_post = dst->get_post_trace(tau_post);
+	auryn::logger->parameter("tau_post",tau_post);
 }
+
+void GeneralAlltoallSTDPConnection::set_max_weight(AurynWeight maximum_weight)
+{
+	SparseConnection::set_max_weight(maximum_weight);
+	weight_dependence->w_max = maximum_weight;
+}
+
+string GeneralAlltoallSTDPConnection::get_name()
+{
+	// Todo: concatenate with the name of the weight dependence:
+	return Connection::get_name() + " with " +  weight_dependence->rule_name;
+}
+
+
+
 
 

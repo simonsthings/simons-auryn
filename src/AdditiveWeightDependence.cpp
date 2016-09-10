@@ -7,13 +7,15 @@
 using namespace auryn;
 
 AdditiveWeightDependence::AdditiveWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD)
-		: STDPWeightDependence(w_max), scale_LTP(scale_LTP), scale_LTD(scale_LTD)
+		: STDPWeightDependence(w_max,scale_LTP,scale_LTD)
 {}
-AurynDouble AdditiveWeightDependence::applyLTPscaling(AurynWeight *weight)
+AurynDouble AdditiveWeightDependence::scalePreBeforePost(AurynWeight *weight)
 {
-	return scale_LTP ;
+	// ignore the given weight:
+	return scaleconstant_PreBeforePost;
 }
-AurynDouble AdditiveWeightDependence::applyLTDscaling(AurynWeight *weight)
+AurynDouble AdditiveWeightDependence::scalePreAfterPost(AurynWeight *weight)
 {
-	return scale_LTD ;
+	// ignore the given weight:
+	return scaleconstant_PreAfterPost;
 }

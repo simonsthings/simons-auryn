@@ -95,7 +95,8 @@ void StimulusResponseMonitor::propagate()
 			else
 			{
 				// should never be reached if PolychronousPoissonGroup and this class have the same number of patterns set:
-				cout << "A new pattern for pid " << patternToTrack << " has not appeared for longer than the given maxPatternInterval! Latency by now: " << latencyRelativeToThisPatternsOnset << " timesteps. maxPatternInterval: " << spikepatternprovider->getMaxPatternInterval() << ". Ignoring..." << endl;
+				//cout << "A new pattern for pid " << patternToTrack << " has not appeared for longer than the given maxPatternInterval! Latency by now: " << latencyRelativeToThisPatternsOnset << " timesteps. maxPatternInterval: " << spikepatternprovider->getMaxPatternInterval() << ". Ignoring..." << endl;
+				// TODO: don't output anything but make sure that we can track the last few milliseconds BEFORE each new pattern presentation. Maybe by computing the next expected pattern time on each new pattern and also updating maxPatternInterval on new intervals.
 			}
 		}
 	}

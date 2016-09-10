@@ -15,16 +15,20 @@ namespace auryn
 	 */
 	class LinearWeightDependence : public STDPWeightDependence
 	{
+	private:
 		AurynFloat attractorStrengthIndicator;
 		AurynWeight attractorLocationIndicator;
 
 		AurynFloat fudge_LTP;
 		AurynFloat fudge_LTD;
 
+		void compute_fudge();
+
 	public:
-		LinearWeightDependence(AurynWeight w_max, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator);
-		virtual AurynDouble applyLTPscaling(AurynWeight *pDouble);
-		virtual AurynDouble applyLTDscaling(AurynWeight *pDouble);
+		LinearWeightDependence(AurynFloat theAttractorStrengthIndicator=0.5, AurynWeight theAttractorLocationIndicator=0.5);
+		LinearWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator);
+		virtual AurynDouble scalePreBeforePost(AurynWeight* weight);
+		virtual AurynDouble scalePreAfterPost(AurynWeight* weight);
 	};
 
 }
