@@ -368,11 +368,11 @@ STDPWeightDependence* setupWeightDependence(const boost::property_tree::ptree& s
 		AdditiveWeightDependence* wd = new AdditiveWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus);
 		theWeightDependence = wd;
 	}
-	else if (type == "LinearWeightDependence")
+	else if (type == "LinearAttractorWeightDependence")
 	{
 		AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorStrengthIndicator");
 		AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorLocationIndicator");
-		LinearWeightDependence* wd = new LinearWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
+		LinearAttractorWeightDependence* wd = new LinearAttractorWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
 		theWeightDependence = wd;
 	}
 	else if (type == "Guetig2003WeightDependence")

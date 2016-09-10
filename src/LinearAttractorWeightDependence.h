@@ -13,7 +13,7 @@ namespace auryn
 	 *
 	 * TODO: reshape to allow vectorization?
 	 */
-	class LinearWeightDependence : public STDPWeightDependence
+	class LinearAttractorWeightDependence : public STDPWeightDependence
 	{
 	private:
 		AurynFloat attractorStrengthIndicator;
@@ -25,8 +25,8 @@ namespace auryn
 		void compute_fudge();
 
 	public:
-		LinearWeightDependence(AurynFloat theAttractorStrengthIndicator=0.5, AurynWeight theAttractorLocationIndicator=0.5);
-		LinearWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator);
+		LinearAttractorWeightDependence(AurynFloat theAttractorStrengthIndicator=0.5, AurynWeight theAttractorLocationIndicator=0.5);
+		LinearAttractorWeightDependence(AurynWeight w_max, AurynFloat scale_LTP, AurynFloat scale_LTD, AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator);
 		virtual AurynDouble scalePreBeforePost(AurynWeight* weight);
 		virtual AurynDouble scalePreAfterPost(AurynWeight* weight);
 	};
