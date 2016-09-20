@@ -78,7 +78,7 @@ void StimulusResponseMonitor::propagate()
 		{
 			// put any new spikes into the appropriate bin:
 			AurynTime latencyRelativeToThisPatternsOnset = sys->get_clock() - lastPatternArrivalClock;
-			if (latencyRelativeToThisPatternsOnset <= spikepatternprovider->getMaxPatternInterval())
+			if (latencyRelativeToThisPatternsOnset <= spikepatternprovider->get_next_pattern_onset())
 			{
 				// record multi-pattern peak data:
 				responseTracker[latencyRelativeToThisPatternsOnset]++;

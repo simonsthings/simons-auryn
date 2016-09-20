@@ -74,8 +74,10 @@
 #include "auryn/AllToAllConnection.h"
 #include "GeneralAlltoallSTDPConnection.h"
 
-// Weight Dependence definitions
+// rule class definitions
 #include "STDPWeightDependence.h"
+#include "HomeostasisRule.h"
+
 
 // Spiking and input group definitions
 #include "auryn/SpikingGroup.h"

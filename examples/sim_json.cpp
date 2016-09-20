@@ -67,9 +67,9 @@ float getSamplinginterval(boost::property_tree::ptree const& pt, string path)
 	}
 }
 
-void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tree::ptree & simparams)
+void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tree::ptree & simparams, string * sim_path)
 {
-	string settingsfile_simulation = "settings_simulation.json";
+	string settingsfile_simulation = (*sim_path)+"settings_simulation.json";
 
 	// BEGIN Command line parameters
     try {
@@ -154,6 +154,12 @@ void readParametersFromJSONfileAndCMDline(int ac, char* av[], boost::property_tr
 //			simtime = vm["simtime"].as<double>();
 //        }
 
+		std::size_t last_slash_location = settingsfile_simulation.rfind("/");
+		if (last_slash_location != std::string::npos)
+		{
+			// one or more slashed were found, so we know that settingsfile_simulation is not just a file name.
+			(*sim_path) = settingsfile_simulation.substr(0,last_slash_location);
+		}
     }
     catch(exception& e) {
         cerr << "error: " << e.what() << "\n";
@@ -222,19 +228,14 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
 
 
+			std::cout <<   " Testingprotocol Durations: ";
 			for (auto i : as_vector<AurynFloat>(simparams, "general.testingProtocol.durations")) std::cout << i << ' ';
-			std::cout << '\n';
+			std::cout << "\n Testingprotocol Intervals: ";
 			for (auto j : as_vector<AurynFloat>(simparams, "general.testingProtocol.intervals")) std::cout << j << ' ';
-
+			std::cout << "\n";
 
 			vector<AurynFloat> testprotocolDurations = as_vector<AurynFloat>(simparams, "general.testingProtocol.durations");
-			//testprotocolDurations.push_back(30);
-			//testprotocolDurations.push_back(30);
-			//testprotocolDurations.push_back(simparams.get<AurynFloat>("general.simtime")-60);
 			vector<AurynFloat> testprotocolPatternintervals = as_vector<AurynFloat>(simparams, "general.testingProtocol.intervals");
-			//testprotocolPatternintervals.push_back(0.3);   // negative values indicate noise only.
-			//testprotocolPatternintervals.push_back(0.2);  // in seconds.
-			//testprotocolPatternintervals.push_back(10.0); // in seconds.
 			((PolychronousPoissonGroup*) (poisson))->setTestingProtocol(testprotocolDurations,testprotocolPatternintervals);
 		}
 		else
@@ -661,7 +662,8 @@ int main(int ac, char* av[])
     boost::property_tree::ptree simparams;  // the property tree for storing the simulation parameters!
     /* Fill params structure with default parameters! These will also be printed to an example file if requested. */
     defineDefaultParameters(simparams);
-    readParametersFromJSONfileAndCMDline(ac,av,simparams);
+	string sim_path = "";
+    readParametersFromJSONfileAndCMDline(ac,av,simparams,&sim_path);
 
 
 	// BEGIN Global definitions

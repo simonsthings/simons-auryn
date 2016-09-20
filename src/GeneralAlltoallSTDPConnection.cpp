@@ -61,6 +61,36 @@ void GeneralAlltoallSTDPConnection::free()
 
 
 
+
+void GeneralAlltoallSTDPConnection::setTau_pre(AurynFloat the_tau_pre)
+{
+	tau_pre = the_tau_pre;
+	tr_pre  = src->get_pre_trace(tau_pre);
+	auryn::logger->parameter("tau_pre",tau_pre);
+}
+
+void GeneralAlltoallSTDPConnection::setTau_post(AurynFloat the_tau_post)
+{
+	tau_post = the_tau_post;
+	tr_post = dst->get_post_trace(tau_post);
+	auryn::logger->parameter("tau_post",tau_post);
+}
+
+void GeneralAlltoallSTDPConnection::set_max_weight(AurynWeight maximum_weight)
+{
+	SparseConnection::set_max_weight(maximum_weight);
+	weight_dependence->w_max = maximum_weight;
+}
+
+string GeneralAlltoallSTDPConnection::get_name()
+{
+	// Todo: concatenate with the name of the weight dependence:
+	return Connection::get_name() + " with " +  weight_dependence->rule_name;
+}
+
+
+
+
 AurynWeight GeneralAlltoallSTDPConnection::get_postspikememory(NeuronID postspiker)
 {
 	NeuronID translated_postspiker = dst->global2rank(postspiker); // only to be used for dst traces
@@ -136,33 +166,17 @@ void GeneralAlltoallSTDPConnection::propagate()
 
 void GeneralAlltoallSTDPConnection::evolve()
 {
+	// apply all those non-STDP plasticity things here!
+//	for (auto homeostasisobject : homeostasisvector)
+	{
+		//evolve_homeostasis(homeostasisobject);
+	}
 }
 
-void GeneralAlltoallSTDPConnection::setTau_pre(AurynFloat the_tau_pre)
-{
-	tau_pre = the_tau_pre;
-	tr_pre  = src->get_pre_trace(tau_pre);
-	auryn::logger->parameter("tau_pre",tau_pre);
-}
-
-void GeneralAlltoallSTDPConnection::setTau_post(AurynFloat the_tau_post)
-{
-	tau_post = the_tau_post;
-	tr_post = dst->get_post_trace(tau_post);
-	auryn::logger->parameter("tau_post",tau_post);
-}
-
-void GeneralAlltoallSTDPConnection::set_max_weight(AurynWeight maximum_weight)
-{
-	SparseConnection::set_max_weight(maximum_weight);
-	weight_dependence->w_max = maximum_weight;
-}
-
-string GeneralAlltoallSTDPConnection::get_name()
-{
-	// Todo: concatenate with the name of the weight dependence:
-	return Connection::get_name() + " with " +  weight_dependence->rule_name;
-}
+//void GeneralAlltoallSTDPConnection::evolve_homeostasis(HomeostasisRule* homeostasisobject)
+//{
+//	homeostasisobject->updateWeightsBasedOnWeightDistribution(this);
+//}
 
 
 

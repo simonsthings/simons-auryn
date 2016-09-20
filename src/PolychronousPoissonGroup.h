@@ -41,7 +41,7 @@ namespace auryn
 		boost::uniform_01<> * dist_PPG;  // from PoissonGroup
 		boost::variate_generator<boost::mt19937&, boost::uniform_01<> > * die_PPG;	  // from PoissonGroup
 
-		unsigned int salt;	  // from PoissonGroup
+		unsigned int salt_PPG;	  // from PoissonGroup
 
 
 
@@ -61,6 +61,11 @@ namespace auryn
 		ofstream patterntimesfile;
 
 		AurynTime next_event;
+		AurynTime next_pattern_onset;
+	public:
+		AurynTime get_next_pattern_onset() const;
+
+	private:
 		bool stimulus_active;
 		int current_stimulus;
 		vector<PatternID> stimuli_immediate;
@@ -77,8 +82,8 @@ namespace auryn
 
 		vector<AurynFloat> testprotocolDurations;
 		vector<AurynFloat> testprotocolPatternintervals;
-		AurynTime next_phase_clock;
-		int next_phase_id;
+		AurynTime next_phase_start_clock;
+		int current_phase_id;
 
 
 	protected:
@@ -103,10 +108,6 @@ namespace auryn
 		NeuronID numPatterns;	// total number of distinct patterns (=stimuli)
 		AurynTime patternDuration;	// may vary during runtime, if implemented
 		AurynTime patternInterval;	// may vary during runtime, if implemented
-		AurynTime max_patternDuration;	// fixed buffer size
-
-		AurynTime max_patternInterval;	// fixed buffer size
-
 
 
 		PolychronousPoissonGroup(NeuronID N_total, NeuronID N_presenting, NeuronID N_subpresenting,
@@ -130,10 +131,6 @@ namespace auryn
 		vector<PatternID> get_stimuli_immediate();
 
 		PatternID getNumPatterns();
-		AurynTime getMaxPatternDuration();
-		void setMaxPatternDuration(AurynTime max_patternDuration);
-		AurynTime getMaxPatternInterval();
-		void setMaxPatternInterval(AurynTime max_patternInterval);
 
 		template<typename T> class CompareIndicesByAnotherVectorValues
 		{

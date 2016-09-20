@@ -88,8 +88,8 @@ void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParamet
 		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
 		C = 1;
 		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -42.3444f;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -82.6556f;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
 
 		V_peak = 30*mV;
 		V_reset = izhi_c*mV;
@@ -109,8 +109,8 @@ void Izhikevich2003Group::select_example_parameter_set(Izhikevich_DefaultParamet
 		// To allow (0.04v^2 + 5v + 140) as in Izhikevich (2003) paper, use these params:
 		C = 1;
 		k = 0.04;                   // scaling factor k as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_thres = -42.3444;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
-		v_rest  = -82.6556;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_thres = -42.3444f;//*mV;  // soft threshold potential v_t as in Izhikevich book p. 273 (Chapter 8.1.4)
+		v_rest  = -82.6556f;//*mV;   // resting potential v_r as in Izhikevich book p. 273 (Chapter 8.1.4)
 
 		V_peak = 30*mV;
 		V_reset = izhi_c*mV;

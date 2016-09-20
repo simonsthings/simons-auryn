@@ -39,12 +39,12 @@ void PolychronousPoissonGroup::init(AurynDouble rate, NeuronID N_presenting, Neu
 	participationProbability = 1.0;
 
 	numPatterns = stimuli;
-	patternDuration = duration/auryn_timestep;
-	patternInterval = interval/auryn_timestep;
+	patternDuration = (AurynTime) (duration/auryn_timestep);
+	patternInterval = (AurynTime) (interval/auryn_timestep);
 	logger->parameter("duration", (int)duration);
 	logger->parameter("mean_isi", (int)patternInterval);
-	max_patternDuration = patternDuration;
-	max_patternInterval = patternInterval;
+	//max_patternDuration = patternDuration;
+	//max_patternInterval = patternInterval;
 
 	representedValues.push_back(0.5);
 
@@ -70,7 +70,7 @@ void PolychronousPoissonGroup::init(AurynDouble rate, NeuronID N_presenting, Neu
 	dist_PPG = new boost::uniform_01<>();
 
 	die_PPG = new boost::variate_generator<boost::mt19937 &, boost::uniform_01<> >(PolychronousPoissonGroup::gen_PPG, *dist_PPG);
-	salt = sys->get_seed();
+	salt_PPG = sys->get_seed();
 	seed(sys->get_seed());
 	x = 0;
 	set_rate( rate );
@@ -94,16 +94,16 @@ void PolychronousPoissonGroup::init(AurynDouble rate, NeuronID N_presenting, Neu
 	}
 
 	// should be at the end of the init function:
-	initBuffers(max_patternDuration);
+	initBuffers(patternDuration);
 }
 
 void PolychronousPoissonGroup::seed(unsigned int s)
 {
 	std::stringstream oss;
-	oss << "PolychronousPoissonGroup:: Seeding rank " << sys->mpi_rank() << " with seed " << s;
+	oss << "PolychronousPoissonGroup:: Seeding rank " << sys->mpi_rank() << " with seed " << s << " and salt " << salt_PPG;
 	logger->msg(oss.str(),NOTIFICATION);
 
-	gen_PPG.seed( s + salt );
+	gen_PPG.seed( s + salt_PPG );
 }
 
 
@@ -323,17 +323,20 @@ void PolychronousPoissonGroup::evolve()
 
 	if ( sys->get_clock() >= next_event ) {
 		if ( stimulus_active ) {
+			// switch off stimulus:
 			stimulus_active = false;
 			//seed(sys->get_clock());
 			next_event += (patternInterval-patternDuration);
 			//cout << " ending stimulus! " << endl;
 		} else {
+			// switch on stimulus:
 			stimulus_active = true;
 			current_stimulus = (current_stimulus+1)%numPatterns;
 			stimuli_immediate.push_back(current_stimulus);
 			x = 0;
 			patterntimesfile << sys->get_time() << " " << current_stimulus << endl;
 			//seed(current_stimulus+seedoffset);
+			next_pattern_onset = next_event + patternInterval;
 			next_event += patternDuration;
 			//cout << " starting new stimulus! " << endl;
 		}
@@ -425,35 +428,15 @@ PatternID PolychronousPoissonGroup::getNumPatterns()
 }
 
 
-AurynTime PolychronousPoissonGroup::getMaxPatternDuration()
-{
-	return max_patternDuration;
-}
-
-void PolychronousPoissonGroup::setMaxPatternDuration(AurynTime max_patternDuration)
-{
-	PolychronousPoissonGroup::max_patternDuration = max_patternDuration;
-}
-
-AurynTime PolychronousPoissonGroup::getMaxPatternInterval()
-{
-	return max_patternInterval;
-}
-
-void PolychronousPoissonGroup::setMaxPatternInterval(AurynTime max_patternInterval)
-{
-	PolychronousPoissonGroup::max_patternInterval = max_patternInterval;
-}
-
 void PolychronousPoissonGroup::setTestingProtocol(vector<AurynFloat> theTestprotocolDurations, vector<AurynFloat> theTestprotocolPatternintervals)
 {
 	testprotocolDurations = theTestprotocolDurations;
 	testprotocolPatternintervals = theTestprotocolPatternintervals;
 
 	// assumes that testprotocolDurations contains at least one element. Todo: ensure testprotocolDurations always contains at least one element!
-	next_phase_id = 0;
-	patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / auryn_timestep);
-	next_phase_clock = (AurynTime)(testprotocolDurations[next_phase_id] / auryn_timestep);
+	current_phase_id = 0;
+	patternInterval = (AurynTime)(testprotocolPatternintervals[current_phase_id] / auryn_timestep);
+	next_phase_start_clock = (AurynTime)(testprotocolDurations[current_phase_id] / auryn_timestep);
 }
 
 /**
@@ -465,11 +448,11 @@ void PolychronousPoissonGroup::setTestingProtocol(vector<AurynFloat> theTestprot
 void PolychronousPoissonGroup::checkAndUpdateTestingProtocol()
 {
 
-	if ( sys->get_clock() > next_phase_clock )
+	if ( sys->get_clock() > next_phase_start_clock )
 	{
-		next_phase_id++;
-		patternInterval = (AurynTime)(testprotocolPatternintervals[next_phase_id] / auryn_timestep);
-		next_phase_clock += (AurynTime)(testprotocolDurations[next_phase_id] / auryn_timestep);
+		current_phase_id++;
+		patternInterval = (AurynTime)(testprotocolPatternintervals[current_phase_id] / auryn_timestep);
+		next_phase_start_clock += (AurynTime)(testprotocolDurations[current_phase_id] / auryn_timestep);
 	}
 
 }
@@ -493,6 +476,11 @@ void PolychronousPoissonGroup::PGevolve()
 		// beware one induces systematic error that becomes substantial at high rates, but keeps neuron from spiking twice per time-step
 	}
 	x -= get_rank_size();
+}
+
+AurynTime PolychronousPoissonGroup::get_next_pattern_onset() const
+{
+	return next_pattern_onset;
 }
 
 

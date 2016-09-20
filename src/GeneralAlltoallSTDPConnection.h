@@ -64,6 +64,7 @@ protected:
 	AurynWeight get_prespikememory(NeuronID prespiker);
 
 	STDPWeightDependence* weight_dependence;
+//	std::vector<HomeostasisRule*> homeostasisvector; ///< list of homeostasis rues to be applied to the connection in vector's order.
 
 public:
 	bool stdp_active;
@@ -90,6 +91,7 @@ public:
 	void setTau_pre(AurynFloat tau_pre);
 	void setTau_post(AurynFloat tau_post);
 
+	//void evolve_homeostasis(HomeostasisRule* homeostasisobject);
 };
 
 }
