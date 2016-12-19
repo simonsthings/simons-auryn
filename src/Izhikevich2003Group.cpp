@@ -53,7 +53,7 @@ void Izhikevich2003Group::init()
 	scale_mem = auryn_timestep/ms /(C/pF) * mV;
 	scale_u = auryn_timestep/ms *mV;
 
-	projMult = 1.5 * ms/auryn_timestep;  // by default, lets use the same multiplicator as in my matlab code.
+	projMult = 1.0 * ms/auryn_timestep;  // by default, lets use the same multiplicator as in my matlab code.
 
 	clear();
 }
