@@ -260,82 +260,87 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 
 NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams, string outputgroupIDstring)
 {
-	NeuronGroup* postGroup;
+	//NeuronGroup* postGroup;
 	try
 	{
-
+		string requestedNeuronGroupClass = simparams.get<string>("neurongroups."+outputgroupIDstring+".type");
+		cout << "The requested NeuronGroup is: " << requestedNeuronGroupClass << endl;
 
 		NeuronID N_post = simparams.get<NeuronID>("neurongroups."+outputgroupIDstring+".N");
-		Izhikevich2003Group* detector_neuron = new Izhikevich2003Group(N_post);
-		detector_neuron->set_projMult( simparams.get<float>("neurongroups."+outputgroupIDstring+".projMult") );
-		detector_neuron->use_recovery = simparams.get<bool>("neurongroups."+outputgroupIDstring+".userecovery");
 
-		cout << "IzhikevichGroup.projMult: " << detector_neuron->get_projMult() << endl;
-		cout << "IzhikevichGroup.use_recovery: " << detector_neuron->use_recovery << endl;
-		postGroup = detector_neuron;
+		if ("Izhikevich2003Group" == requestedNeuronGroupClass)
+		{
+			Izhikevich2003Group* detector_neuron = new Izhikevich2003Group(N_post);
+			detector_neuron->set_projMult( simparams.get<float>("neurongroups."+outputgroupIDstring+".projMult") );
+			detector_neuron->use_recovery = simparams.get<bool>("neurongroups."+outputgroupIDstring+".userecovery");
+			//detector_neuron.
 
-
-		//	IFGroup* detector_neuron = new IFGroup(N_post);
-		//	cout << "IFNeuron.ampa: " << detector_neuron->get_ampa(0) << endl;
-		//	cout << "IFNeuron.cursyn: " << detector_neuron->get_cursyn(0) << endl;
-		//	cout << "IFNeuron.effective_load: " << detector_neuron->get_effective_load() << endl;
-		//	cout << "IFNeuron.gaba: " << detector_neuron->get_gaba(0) << endl;
-		//	cout << "IFNeuron.locked_range: " << detector_neuron->get_locked_range() << endl;
-		//	cout << "IFNeuron.locked_rank: " << detector_neuron->get_locked_rank() << endl;
-		//	cout << "IFNeuron.mem: " << detector_neuron->get_mem(0) << endl;pych
-		//	cout << "IFNeuron.name: " << detector_neuron->get_name() << endl;
-		//	cout << "IFNeuron.nmda: " << detector_neuron->get_nmda(0) << endl;
-		//	cout << "IFNeuron.num_spike_attributes: " << detector_neuron->get_num_spike_attributes() << endl;
-		//	cout << "IFNeuron.post_size: " << detector_neuron->get_post_size() << endl;
-		//	cout << "IFNeuron.pre_size: " << detector_neuron->get_pre_size() << endl;
-		//	cout << "IFNeuron.rank_size: " << detector_neuron->get_rank_size() << endl;
-		//	cout << "IFNeuron.size: " << detector_neuron->get_size() << endl;
-		//	cout << "IFNeuron.tau_ampa: " << detector_neuron->get_tau_ampa() << endl;
-		//	cout << "IFNeuron.tau_gaba: " << detector_neuron->get_tau_gaba() << endl;
-		//	cout << "IFNeuron.tau_mem: " << detector_neuron->get_tau_mem() << endl;
-		//	cout << "IFNeuron.tau_nmda: " << detector_neuron->get_tau_nmda() << endl;
-		//	cout << "IFNeuron.uid: " << detector_neuron->get_uid() << endl;
-		//	cout << "IFNeuron.vec_size: " << detector_neuron->get_vector_size() << endl;
-		//
-		//	cout << "Adjusting default values of IFNeuron..." << endl;
-		//	detector_neuron->set_tau_mem(0.4);
-		//
-		//	cout << "IFNeuron.tau_mem: " << detector_neuron->get_tau_mem() << endl;
-
-
-		//	CubaIFGroup* detector_neuron = new CubaIFGroup(N_post);  // doesn't even start. Need more starting weight??
-		//	cout << "CubaIFGroup.ampa: " << detector_neuron->get_ampa(0) << endl;
-		//	cout << "CubaIFGroup.cursyn: " << detector_neuron->get_cursyn(0) << endl;
-		//	cout << "CubaIFGroup.effective_load: " << detector_neuron->get_effective_load() << endl;
-		//	cout << "CubaIFGroup.gaba: " << detector_neuron->get_gaba(0) << endl;
-		//	cout << "CubaIFGroup.locked_range: " << detector_neuron->get_locked_range() << endl;
-		//	cout << "CubaIFGroup.locked_rank: " << detector_neuron->get_locked_rank() << endl;
-		//	cout << "CubaIFGroup.mem: " << detector_neuron->get_mem(0) << endl;
-		//	cout << "CubaIFGroup.name: " << detector_neuron->get_name() << endl;
-		//	cout << "CubaIFGroup.nmda: " << detector_neuron->get_nmda(0) << endl;
-		//	cout << "CubaIFGroup.num_spike_attributes: " << detector_neuron->get_num_spike_attributes() << endl;
-		//	cout << "CubaIFGroup.post_size: " << detector_neuron->get_post_size() << endl;
-		//	cout << "CubaIFGroup.pre_size: " << detector_neuron->get_pre_size() << endl;
-		//	cout << "CubaIFGroup.rank_size: " << detector_neuron->get_rank_size() << endl;
-		//	cout << "CubaIFGroup.size: " << detector_neuron->get_size() << endl;
-		//	cout << "CubaIFGroup.uid: " << detector_neuron->get_uid() << endl;
-		//	cout << "CubaIFGroup.vec_size: " << detector_neuron->get_vector_size() << endl;
-		//
-		//	cout << "CubaIFGroup.bg_current: " << detector_neuron->get_bg_current(0) << endl;
-		//
-		//	cout << "Adjusting default values of IFNeuron..." << endl;
-		//	detector_neuron->set_all_bg_currents(0.011);
-		//
-		//	cout << "CubaIFGroup.bg_current: " << detector_neuron->get_bg_current(0) << endl;
-
+			cout << "IzhikevichGroup.projMult: " << detector_neuron->get_projMult() << endl;
+			cout << "IzhikevichGroup.use_recovery: " << detector_neuron->use_recovery << endl;
+			return detector_neuron;
+		}
+		else if ("Izhikevich2007Group" == requestedNeuronGroupClass)
+		{
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("IzhikevichGroup" == requestedNeuronGroupClass)
+		{
+			IzhikevichGroup* new_group = new IzhikevichGroup(N_post);
+			// read a,b,c,d from JSON here maybe?
+			return new_group;
+		}
+		else if ("IFGroup" == requestedNeuronGroupClass)
+		{
+			IFGroup* detector_neuron = new IFGroup(N_post);
+			cout << "Adjusting default values of IFNeuron..." << endl;
+			detector_neuron->set_tau_mem(0.4);
+			cout << "IFNeuron.tau_mem: " << detector_neuron->get_tau_mem() << endl;
+			return detector_neuron;
+		}
+		else if ("CubaIFGroup" == requestedNeuronGroupClass)
+		{
+			CubaIFGroup* detector_neuron = new CubaIFGroup(N_post);  // doesn't even start. Need more starting weight??
+			cout << "CubaIFGroup.bg_current: " << detector_neuron->get_bg_current(0) << endl;
+			cout << "Adjusting default values of IFNeuron..." << endl;
+			detector_neuron->set_all_bg_currents(0.011);
+			cout << "CubaIFGroup.bg_current: " << detector_neuron->get_bg_current(0) << endl;
+			return detector_neuron;
+		}
+		else if ("SIFGroup" == requestedNeuronGroupClass)
+		{
 			//SIFGroup* detector_neuron = new SIFGroup(N_post);   // type not found? It is included everywhere?
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("TIFGroup" == requestedNeuronGroupClass)
+		{
 			//TIFGroup* detector_neuron = new TIFGroup(N_post);
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("IafPscDeltaGroup" == requestedNeuronGroupClass)
+		{
 			//IafPscDeltaGroup* detector_neuron = new IafPscDeltaGroup(N_post);
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("AdExGroup" == requestedNeuronGroupClass)
+		{
 			//AdExGroup* detector_neuron = new AdExGroup(N_post);
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("AIFGroup" == requestedNeuronGroupClass)
+		{
 			//AIFGroup* detector_neuron = new AIFGroup(N_post);
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else if ("AIF2Group" == requestedNeuronGroupClass)
+		{
 			//AIF2Group* detector_neuron = new AIF2Group(N_post);   // this is the only Group that stops! But I guess some other process is involved here...
-
-
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not yet implemented.");
+		}
+		else
+		{
+			throw std::logic_error("JSON-based construction of NeuronGroup '"+requestedNeuronGroupClass+"' is not defined. Typo?");
+			//throw AurynGenericException();
+		}
 	}
     catch(exception& e) {
         cerr << "error: " << e.what() << "\n";
@@ -346,7 +351,7 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
         std::exit(1);
     }
 
-    return postGroup;
+//    return postGroup;
 
 }
 

@@ -40,8 +40,9 @@ int main(int ac, char* av[])
 	NeuronID size = 1000;
 	NeuronID seed = 1;
 	double kappa = 5.;
-	double simtime = 0.1;  // in seconds
-	double stepAt  = simtime/10.0;  // in seconds
+	double simtime = 2.0;  // in seconds
+	//double stepAt  = simtime/4.0;  // in seconds
+	double stepAt  = 1.01;  // in seconds
 
 	if (stepAt >= simtime)
 		throw logic_error("the step time must be within the sim time!!");
@@ -112,23 +113,80 @@ int main(int ac, char* av[])
 	// END Global stuff
 
 	NeuronID N_post = 1;
-	Izhikevich2003Group* izhi_neuron = new Izhikevich2003Group(N_post);
-	//CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"mem");
-	CurrentInjector* theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
-	theInjector->set_current(0,0.0);  // start with no added current
+
+	enum IzhiTypes  {Zenke_Izhi, Izhi2003, Izhi2007, IzhiAlternative};
+
+	CurrentInjector* theInjector;
+
+	//IzhiTypes theType = Izhi2003;
+	IzhiTypes theType = IzhiAlternative;
+	//IzhiTypes theType = Zenke_Izhi;
+
+	if (theType == Izhi2003)
+	{
+		Izhikevich2003Group* izhi_neuron = new Izhikevich2003Group(N_post);
+		//theInjector  = new CurrentInjector(izhi_neuron,"mem");
+		//theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
+		theInjector  = new CurrentInjector(izhi_neuron,"g_ampa");
+		theInjector->set_current(0,0.0);  // start with no added current
 
 
-	VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem");
-	StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"u", "test_Izhi.u");
-	StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"t_exc", "test_Izhi.t_exc");
-	SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras", size);
+		VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem.txt");
+		StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"u", "test_Izhi.u.txt");
+		StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"t_exc", "test_Izhi.t_exc.txt");
+		SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras.txt", size);
+	}
+	else if (theType == IzhiAlternative)
+	{
+		IzhikevichAlternativeGroup* izhi_neuron = new IzhikevichAlternativeGroup(N_post);
+		//theInjector  = new CurrentInjector(izhi_neuron,"mem");
+		//theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
+		theInjector  = new CurrentInjector(izhi_neuron,"g_ampa");
+		theInjector->set_current(0,0.0);  // start with no added current
+
+
+		VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem.txt");
+		StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"u", "test_Izhi.u.txt");
+		StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"t_exc", "test_Izhi.t_exc.txt");
+		SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras.txt", size);
+	}
+	else if (theType == Izhi2007)
+	{
+		// do something here too, please.
+	}
+	else if (theType == Zenke_Izhi)
+	{
+		IzhikevichGroup* izhi_neuron = new IzhikevichGroup(N_post);
+
+		izhi_neuron->avar = 0.02;    // adaptation variable rate constant
+		izhi_neuron->bvar = 0.2;     // subtreshold adaptation
+		izhi_neuron->cvar = -65e-3f; // reset voltage
+		izhi_neuron->dvar = 6.0e-3;
+		izhi_neuron->set_tau_ampa(1e-9);
+		izhi_neuron->set_tau_gaba(1e-9);
+
+
+		//theInjector  = new CurrentInjector(izhi_neuron,"mem");
+		//theInjector  = new CurrentInjector(izhi_neuron,"t_exc");
+		theInjector  = new CurrentInjector(izhi_neuron,"g_ampa");
+		theInjector->set_current(0,0.0);  // start with no added current
+
+
+		VoltageMonitor* vmon = new VoltageMonitor(izhi_neuron, 0, "test_Izhi.mem.txt");
+		StateMonitor* umon = new StateMonitor(izhi_neuron, 0,"izhi_adaptation", "test_Izhi.u.txt");
+		StateMonitor* exc_mon = new StateMonitor(izhi_neuron, 0,"cur_exc", "test_Izhi.t_exc.txt");
+		StateMonitor* ampa_mon = new StateMonitor(izhi_neuron, 0,"g_ampa", "test_Izhi.g_ampa.txt");
+		SpikeMonitor * smon_e = new SpikeMonitor( izhi_neuron, "test_Izhi.ras.txt", size);
+	}
 
 	///< simulate until the current step:
 	if (!sys->run(stepAt,false))
 			errcode = 2;
 
 
-	double stepcurrent = 14.0 / auryn_timestep;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	double stepcurrent = 14.0 * 1e+3 ;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	//double stepcurrent = 2.355 * 1e+3 ;//*pA; // pA=1 currently.  // still not sure which order of mag this needs to be...
+	//double stepcurrent = 0.0;
 	theInjector->set_current(0,stepcurrent);
 
 

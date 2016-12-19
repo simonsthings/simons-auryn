@@ -28,7 +28,7 @@
 
 namespace auryn {
 
-double auryn_timestep = 1e-3;
+double auryn_timestep = 1e-4;
 
 int auryn_AlignOffset // copied from ATLAS
 (const int N,       /* max return value */
