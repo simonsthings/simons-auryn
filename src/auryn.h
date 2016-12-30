@@ -73,6 +73,7 @@
 #include "auryn/IdentityConnection.h"
 #include "auryn/AllToAllConnection.h"
 #include "GeneralAlltoallSTDPConnection.h"
+#include "WDHomeostaticSTDPConnection.h"
 
 // rule class definitions
 #include "STDPWeightDependence.h"
@@ -107,6 +108,7 @@
 #include "auryn/IzhikevichGroup.h"
 #include "Izhikevich2003Group.h"
 #include "Izhikevich2007Group.h"
+#include "IzhikevichAlternativeGroup.h"
 
 
 // Checker definitions
