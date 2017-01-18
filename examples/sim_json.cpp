@@ -39,7 +39,7 @@ namespace mpi = boost::mpi;
 //void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams);
 //int main(int ac, char* av[]);
 
-
+typedef unsigned int Unsigned_Int;  // clion inspection keeps complaining about the spacing in "unsigned int" otherwise
 
 void defineDefaultParameters(boost::property_tree::ptree const& pt)
 {
@@ -196,7 +196,7 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		{
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
 			poisson = new PoissonGroup(Npre, inputpoprate);
-			((PoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
+			((PoissonGroup*) (poisson))->seed(simparams.get<Unsigned_Int>("neurongroups."+inputgroupIDstring+".randomseed"));
 		}
 		else if ("FileInputGroup" == requestedNeuronGroupClass)
 		{
@@ -208,11 +208,11 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 		{
 			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patternduration");
 			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patterninterval");
-			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
+			unsigned int numStimuli = simparams.get<Unsigned_Int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
 			string patOccurrencesFilename = simparams.get<string>("neurongroups."+inputgroupIDstring+".patternOccurrencesFilename");
 			poisson = new StructuredPoissonGroup(Npre, patDuration, patInterval, numStimuli, inputpoprate, patOccurrencesFilename);
-			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
+			((StructuredPoissonGroup*) (poisson))->seed(simparams.get<Unsigned_Int>("neurongroups."+inputgroupIDstring+".randomseed"));
 		}
 		else if ("PolychronousPoissonGroup" == requestedNeuronGroupClass)
 		{
@@ -220,12 +220,12 @@ SpikingGroup* setupPresynapticGroup(const boost::property_tree::ptree& simparams
 			NeuronID Npre_subpresenting = simparams.get<NeuronID>("neurongroups."+inputgroupIDstring+".N_subpresenting");
 			AurynFloat patDuration = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patternduration");
 			AurynFloat patInterval = simparams.get<AurynFloat>("neurongroups."+inputgroupIDstring+".patterninterval");
-			unsigned int numStimuli = simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
+			unsigned int numStimuli = simparams.get<Unsigned_Int>("neurongroups."+inputgroupIDstring+".numberofstimuli");
 			AurynDouble inputpoprate = simparams.get<double>("neurongroups."+inputgroupIDstring+".rate");
 			string patOccurrencesFilename = simparams.get<string>("neurongroups."+inputgroupIDstring+".patternOccurrencesFilename");
 			poisson = new PolychronousPoissonGroup(Npre, Npre_presenting, Npre_subpresenting, patDuration, patInterval, numStimuli, inputpoprate,
 					patOccurrencesFilename);
-			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<unsigned int>("neurongroups."+inputgroupIDstring+".randomseed"));
+			((PolychronousPoissonGroup*) (poisson))->seed(simparams.get<Unsigned_Int>("neurongroups."+inputgroupIDstring+".randomseed"));
 
 
 			std::cout <<   " Testingprotocol Durations: ";
@@ -355,7 +355,55 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
 
 }
 
-WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* setupWeightDependence(const boost::property_tree::ptree& simparams, string connectionIDstring)
+
+STDPWeightDependence* setupOldWeightDependence(const boost::property_tree::ptree& simparams, string connectionIDstring)
+{
+	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
+
+	AurynFloat maxweight = simparams.get<float>("connectionsets."+connectionIDstring+".maximumweight"); //1.0f;
+	AurynFloat learningrate = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.learningrate"); //0.01;  // learningrate (?)
+	AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
+	AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
+
+	AurynFloat scaleconstant_plus = learningrate * A_plus;
+	AurynFloat scaleconstant_minus = learningrate * A_minus;
+
+	cout << "The requested weight dependence is: " << type << endl;
+
+	if (type == "AdditiveWeightDependence")
+	{
+		AdditiveWeightDependence* wd = new AdditiveWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus);
+		return wd;
+	}
+	else if (type == "LinearAttractorWeightDependence")
+	{
+		AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorStrengthIndicator");
+		AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorLocationIndicator");
+		LinearAttractorWeightDependence* wd = new LinearAttractorWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
+		return wd;
+	}
+	else if (type == "Guetig2003WeightDependence")
+	{
+		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
+		Guetig2003WeightDependence* wd = new Guetig2003WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu);
+		return wd;
+	}
+	else if (type == "Morrison2007WeightDependence")
+	{
+		AurynFloat mu_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_plus");
+		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
+		Morrison2007WeightDependence* wd = new Morrison2007WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu_plus, mu_minus);
+		return wd;
+	}
+	else
+	{
+		throw std::invalid_argument( "Unknown type of Weight Dependence class. (maybe change implementation anyway?)" );
+	}
+
+}
+
+WDHomeostaticSTDPConnection::WeightDependentUpdateScaling*
+setupWeightDependence_for_WDHomeostaticSTDPConnection(const boost::property_tree::ptree& simparams, string connectionIDstring)
 {
 	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
 
@@ -385,7 +433,7 @@ WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* setupWeightDependence
 		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
 
 		return WDHomeostaticSTDPConnection::WeightDependentUpdateScaling::makeGuetig2003Updates(A_plus,A_minus,learningrate,
-				mu);
+																								mu);
 	}
 	else if (type == "Morrison2007WeightDependence")
 	{
@@ -393,7 +441,7 @@ WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* setupWeightDependence
 		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
 
 		return WDHomeostaticSTDPConnection::WeightDependentUpdateScaling::makeMorrison2007Updates(A_plus,A_minus,learningrate,
-				mu_plus, mu_minus);
+																								  mu_plus, mu_minus);
 	}
 	else
 	{
@@ -402,7 +450,8 @@ WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* setupWeightDependence
 
 }
 
-STDPWeightDependence* setupOldWeightDependence(const boost::property_tree::ptree& simparams, string connectionIDstring)
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule*
+setupWeightDependence_for_STDPwdGrowthConnection(const boost::property_tree::ptree& simparams, string connectionIDstring)
 {
 	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
 
@@ -411,50 +460,48 @@ STDPWeightDependence* setupOldWeightDependence(const boost::property_tree::ptree
 	AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
 	AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
 
-	AurynFloat scaleconstant_plus = learningrate * A_plus;
-	AurynFloat scaleconstant_minus = learningrate * A_minus;
-
-	STDPWeightDependence* theWeightDependence;
-	cout << "The requested weight dependence is: " << type << endl;
-
 	if (type == "AdditiveWeightDependence")
 	{
-		AdditiveWeightDependence* wd = new AdditiveWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus);
-		theWeightDependence = wd;
+		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeAdditiveUpdates(A_plus,A_minus,learningrate);
 	}
 	else if (type == "LinearAttractorWeightDependence")
 	{
 		AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorStrengthIndicator");
 		AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorLocationIndicator");
-		LinearAttractorWeightDependence* wd = new LinearAttractorWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
-		theWeightDependence = wd;
+
+		AurynFloat theMeanSlope = 0;
+		try { theMeanSlope = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.theMeanSlope"); }
+		catch(...) {cout << "While setting up weight dependence: 'connectionsets."+connectionIDstring+".stdprule.weightdependence.theMeanSlope' could not be found. But just pretending it is 0 and continuing." << endl;}
+
+		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeLinearUpdates(A_plus, A_minus, learningrate, attractorStrengthIndicator,
+																							attractorLocationIndicator, theMeanSlope);
 	}
 	else if (type == "Guetig2003WeightDependence")
 	{
 		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
-		Guetig2003WeightDependence* wd = new Guetig2003WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu);
-		theWeightDependence = wd;
+
+		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeGuetig2003Updates(A_plus,A_minus,learningrate,
+																								mu);
 	}
 	else if (type == "Morrison2007WeightDependence")
 	{
 		AurynFloat mu_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_plus");
 		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
-		Morrison2007WeightDependence* wd = new Morrison2007WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu_plus, mu_minus);
-		theWeightDependence = wd;
+
+		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeMorrison2007Updates(A_plus,A_minus,learningrate,
+																								  mu_plus, mu_minus);
 	}
 	else
 	{
 		throw std::invalid_argument( "Unknown type of Weight Dependence class. (maybe change implementation anyway?)" );
 	}
 
-	return theWeightDependence;
 }
+
 
 
 DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* postsynaptic_group, const boost::property_tree::ptree& simparams, string connectionIDstring)
 {
-	DuplexConnection* con1;
-
 	try
 	{
 
@@ -480,7 +527,7 @@ DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* 
 			double ms = 1e-3;  // milisecond scale. Need to find a pretty way of handling this.
 			theConn->A *= A_minus;// *dt/ms;
 			theConn->B *= A_plus;// *dt/ms;
-			con1 = theConn;
+			return theConn;
 		}
 		else if (connectiontype == "STDPwdConnection")
 		{
@@ -488,7 +535,7 @@ DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* 
 			//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
 			theConn->set_mu_plus(1.0);
 			theConn->set_mu_minus(1.0);
-			con1 = theConn;
+			return theConn;
 		}
 		else if (connectiontype == "GeneralAlltoallSTDPConnection")
 		{
@@ -497,16 +544,42 @@ DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* 
 			theConn->setTau_pre(tau_pre);
 			theConn->setTau_post(tau_post);
 			theConn->set_max_weight(maxweight);
-			con1 = theConn;
+			return theConn;
 		}
 		else if (connectiontype == "WDHomeostaticSTDPConnection")
 		{
-			WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* theWeightDependence = setupWeightDependence(simparams, connectionIDstring);
+			WDHomeostaticSTDPConnection::WeightDependentUpdateScaling* theWeightDependence = setupWeightDependence_for_WDHomeostaticSTDPConnection(simparams,
+																																				   connectionIDstring);
 			WDHomeostaticSTDPConnection* theConn = new WDHomeostaticSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, maxweight, theWeightDependence);
 			theConn->setTau_pre(tau_pre);
 			theConn->setTau_post(tau_post);
 			theConn->set_max_weight(maxweight);
-			con1 = theConn;
+			return theConn;
+		}
+		else if (connectiontype == "STDPwdGrowthConnection")
+		{
+			// set up STDP weight dependence rule:
+			STDPwdGrowthConnection::WeightDependentUpdatescalingRule* theWeightDependence = setupWeightDependence_for_STDPwdGrowthConnection(simparams, connectionIDstring);
+
+			// set up actual connection:
+			STDPwdGrowthConnection* theConn = new STDPwdGrowthConnection(presynaptic_group, postsynaptic_group, initialweight, maxweight, theWeightDependence);
+			theConn->setTau_pre(tau_pre);
+			theConn->setTau_post(tau_post);
+			theConn->set_max_weight(maxweight);
+
+			// set up growth rule:
+			const string &growth_type =			  simparams.get<string>("connectionsets."+connectionIDstring+".driftcompensation.type");
+			AurynFloat stride =					  simparams.get<float> ("connectionsets."+connectionIDstring+".driftcompensation.stride");
+			bool scaleByWeight =				  simparams.get<bool>  ("connectionsets."+connectionIDstring+".driftcompensation.scaleByWeight");
+			string trainedness_measure_string =	  simparams.get<string>("connectionsets."+connectionIDstring+".driftcompensation.trainednessMethod");
+			AurynFloat trainednessUpdateInterval= simparams.get<float> ("connectionsets."+connectionIDstring+".driftcompensation.updateinterval_trainedness");
+			AurynFloat weightUpdateInterval =	  simparams.get<float> ("connectionsets."+connectionIDstring+".driftcompensation.updateinterval_weights");
+			auto pGrowthRule = STDPwdGrowthConnection::WeightDependentGrowthRule::rule_factory(growth_type, stride, scaleByWeight, trainedness_measure_string);
+			if (pGrowthRule != nullptr) pGrowthRule->updateinterval_trainedness = trainednessUpdateInterval;
+			if (pGrowthRule != nullptr) pGrowthRule->updateinterval_weights = weightUpdateInterval;
+			theConn->setGrowthRule(pGrowthRule);
+
+			return theConn;
 		}
 		else
 		{
@@ -524,7 +597,7 @@ DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* 
 		std::exit(1);
 	}
 
-	return con1;
+	//throw logic_error("This should never have been reached! Check your code!");
 }
 
 void setupDetailedHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron,
