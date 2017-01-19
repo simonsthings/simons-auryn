@@ -52,10 +52,10 @@ namespace auryn
 		AurynWeight get_prespiketrace(NeuronID prespiker);
 
 		//const std::function<AurynDouble(AurynWeight)> &the_weight_dependence;
-		WeightDependentUpdatescalingRule* the_weight_dependence;
+		WeightDependentUpdatescalingRule* the_weight_dependence; // required in constructor.
 
 	//	std::vector<HomeostasisRule*> homeostasisvector; ///< list of homeostasis rules to be applied to the connection in vector's order.
-		WeightDependentGrowthRule* the_growth_rule;
+		WeightDependentGrowthRule* the_growth_rule = nullptr;  // init with NULL
 
 		/** A one-bit-per-bool storage for remembering whether any incoming weights of each postsynaptic neuron have changed.
 		 * This allows us to only perform the computeTrainedness() of the GrowthRule on that subset of postsynaptic neurons for speed gains.

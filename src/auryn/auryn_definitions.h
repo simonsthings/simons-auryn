@@ -30,7 +30,7 @@
 /*! \brief Compiler flag that determines whether Auryn is built using MPI or
  * not
  */
-#define AURYN_CODE_USE_MPI
+//#define AURYN_CODE_USE_MPI
 
 
 /*! \brief Toggles between memory alignment for SIMD code.
