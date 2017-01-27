@@ -455,14 +455,13 @@ setupWeightDependence_for_STDPwdGrowthConnection(const boost::property_tree::ptr
 {
 	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
 
-	AurynFloat maxweight = simparams.get<float>("connectionsets."+connectionIDstring+".maximumweight"); //1.0f;
 	AurynFloat learningrate = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.learningrate"); //0.01;  // learningrate (?)
 	AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
 	AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
 
 	if (type == "AdditiveWeightDependence")
 	{
-		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeAdditiveUpdates(A_plus,A_minus,learningrate);
+		return new STDPwdGrowthConnection::WeightDependentUpdatescalingRule::AdditiveUpdates(A_plus,A_minus,learningrate);
 	}
 	else if (type == "LinearAttractorWeightDependence")
 	{
@@ -473,14 +472,14 @@ setupWeightDependence_for_STDPwdGrowthConnection(const boost::property_tree::ptr
 		try { theMeanSlope = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.theMeanSlope"); }
 		catch(...) {cout << "While setting up weight dependence: 'connectionsets."+connectionIDstring+".stdprule.weightdependence.theMeanSlope' could not be found. But just pretending it is 0 and continuing." << endl;}
 
-		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeLinearUpdates(A_plus, A_minus, learningrate, attractorStrengthIndicator,
+		return new STDPwdGrowthConnection::WeightDependentUpdatescalingRule::LinearUpdates(A_plus, A_minus, learningrate, attractorStrengthIndicator,
 																							attractorLocationIndicator, theMeanSlope);
 	}
 	else if (type == "Guetig2003WeightDependence")
 	{
 		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
 
-		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeGuetig2003Updates(A_plus,A_minus,learningrate,
+		return new STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Guetig2003Updates(A_plus,A_minus,learningrate,
 																								mu);
 	}
 	else if (type == "Morrison2007WeightDependence")
@@ -488,7 +487,7 @@ setupWeightDependence_for_STDPwdGrowthConnection(const boost::property_tree::ptr
 		AurynFloat mu_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_plus");
 		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
 
-		return STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeMorrison2007Updates(A_plus,A_minus,learningrate,
+		return new STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Morrison2007Updates(A_plus,A_minus,learningrate,
 																								  mu_plus, mu_minus);
 	}
 	else

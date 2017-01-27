@@ -8,24 +8,25 @@ using namespace auryn;
 
 
 STDPwdGrowthConnection::STDPwdGrowthConnection(SpikingGroup *source, NeuronGroup *destination)
-		: STDPwdGrowthConnection(source, destination, 0.85, 1.0, STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeAdditiveUpdates(0.95,1.0,1.0f/32.0f))
+		: STDPwdGrowthConnection(source, destination, 0.85, 1.0, new STDPwdGrowthConnection::WeightDependentUpdatescalingRule::AdditiveUpdates(0.95,1.0,1.0f/32.0f))
 {
 }
 
 STDPwdGrowthConnection::STDPwdGrowthConnection(SpikingGroup *source, NeuronGroup *destination, AurynWeight initialweight, AurynWeight maxweight,
 														 WeightDependentUpdatescalingRule *theWeightDependence, AurynFloat tau_pre, AurynFloat tau_post,
 														 AurynFloat sparseness, TransmitterType transmitter)
-		: DuplexConnection(source, destination, initialweight, sparseness, transmitter, "STDPwdGrowthConnection"), the_weight_dependence(theWeightDependence)
+		: DuplexConnection(source, destination, initialweight, sparseness, transmitter, "STDPwdGrowthConnection")
 {
 	if ( dst->get_post_size() == 0 ) return;  // not sure how bad this would be if it happens. Taken from class STDPConnection.
+
+	setUpdateScalingRule(theWeightDependence);
+	the_weight_dependence->setConnection(this);
 
 	setTau_pre(tau_pre);
 	setTau_post(tau_post);
 
 	set_min_weight(0.0);
 	set_max_weight(maxweight);
-	//the_weight_dependence->setMaxWeight(maxweight);
-	postsyn_weights_have_changed.resize(dst->get_size());
 
 	stdp_active = true;
 }
@@ -56,23 +57,16 @@ void STDPwdGrowthConnection::setTau_post(AurynFloat the_tau_post)
 	auryn::logger->parameter("tau_post",tau_post);
 }
 
-/*
-void STDPwdGrowthConnection::set_max_weight(AurynWeight maximum_weight)
-{
-	SparseConnection::set_max_weight(maximum_weight);
-	//the_weight_dependence->setMaxWeight(maximum_weight);
-}
-*/
 
+/*
 string STDPwdGrowthConnection::get_name()
 {
-	// Todo: concatenate with the name of the weight dependence:
 	if (the_growth_rule != NULL)
-		return Connection::get_name() + " with " +  the_weight_dependence->getRuleName() + " weight dependence and growth";
+		return Connection::get_name() + " with " + the_weight_dependence->get_name() + " weight dependence and growth type '"+ the_growth_rule->getGrowthrule_name() +"'.";
 	else
-		return Connection::get_name() + " with " +  the_weight_dependence->getRuleName() + " weight dependence";
+		return Connection::get_name() + " with " + the_weight_dependence->get_name() + " weight dependence";
 }
-
+*/
 
 
 
@@ -112,7 +106,6 @@ void STDPwdGrowthConnection::propagate_forward()
 				else
 			    if ( *weight < get_min_weight() ) *weight = get_min_weight();
 			}
-			//postsyn_weights_have_changed[*c] = true; // happens multiple times if there are multiple postsyn. neurons. But for very sparse connections, this would vastly increase runtime below...
 		}
 	}
 }
@@ -141,7 +134,6 @@ void STDPwdGrowthConnection::propagate_backward()
 				else
 			    if ( *weight < get_min_weight() ) *weight = get_min_weight();
 			}
-			// postsyn_weights_have_changed[postspiking] = true;
 		}
 	}
 }
@@ -166,13 +158,22 @@ void STDPwdGrowthConnection::evolve()
 
 void STDPwdGrowthConnection::setUpdateScalingRule(WeightDependentUpdatescalingRule* pUpdatescalingRule)
 {
-	// delete any old rule object:
-	if (the_weight_dependence != NULL)
-		delete the_weight_dependence;
+	if (pUpdatescalingRule != NULL)
+	{
+		// delete any old rule object:
+		if (the_weight_dependence != NULL)
+			delete the_weight_dependence;
 
-	the_weight_dependence = pUpdatescalingRule;
-	if (the_weight_dependence != NULL)
+		the_weight_dependence = pUpdatescalingRule;
 		the_weight_dependence->setConnection(this);
+
+		string namestring = "STDPwdGrowthConnection with " + the_weight_dependence->get_name() + " weight dependence.";
+		if (the_growth_rule != NULL)
+			namestring = "STDPwdGrowthConnection with " + the_weight_dependence->get_name() + " weight dependence and growth type '"+ the_growth_rule->getGrowthrule_name() +"'.";
+		set_name(namestring);
+	}
+	else
+		throw std::invalid_argument( "The update scaling rule must never be NULL. Please change your implementation." );
 }
 
 void STDPwdGrowthConnection::setGrowthRule(WeightDependentGrowthRule* pGrowthRule)
@@ -182,280 +183,113 @@ void STDPwdGrowthConnection::setGrowthRule(WeightDependentGrowthRule* pGrowthRul
 		delete the_growth_rule;
 
 	the_growth_rule = pGrowthRule;
+	string namestring = "STDPwdGrowthConnection with " + the_weight_dependence->get_name() + " weight dependence.";
 	if (the_growth_rule != NULL)
+	{
 		the_growth_rule->setConnection(this);
-}
+		namestring = "STDPwdGrowthConnection with " + the_weight_dependence->get_name() + " weight dependence and growth type '"+ the_growth_rule->getGrowthrule_name() +"'.";
+	}
+	set_name(namestring);
 
-//void STDPwdGrowthConnection::evolve_homeostasis(HomeostasisRule* homeostasisobject)
-//{
-//	homeostasisobject->growWeights(this);
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleCausal_Constant(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Causal;
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleCausal_Linear(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Causal * (slope_Causal * (*pWeight) + offset_Causal);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleCausal_Guetig2003(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Causal * std::pow(1-*pWeight,mu_1);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleCausal_Morrison2007(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Causal * std::pow(*pWeight,mu_1);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleCausal_Gilson2011(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Causal * 1;
 }
 
 
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleAnticausal_Constant(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Anticausal;
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleAnticausal_Linear(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Anticausal * (slope_Anticausal * (*pWeight) + offset_Anticausal);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleAnticausal_Guetig2003(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Anticausal * std::pow(*pWeight,mu_2);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleAnticausal_Morrison2007(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Anticausal * std::pow(*pWeight,mu_2);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::scaleAnticausal_Gilson2011(const AurynWeight *pWeight)const
-{
-	return scaleconstant_Anticausal * 1;
-}
 
-/*
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::WeightDependentUpdatescalingRule(
-		AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize)
-		: A_plus(A_plus), A_minus(A_minus),update_stepsize(update_stepsize)
-{
-	scaleconstant_Causal     = A_plus  * update_stepsize;
-	scaleconstant_Anticausal = A_minus * update_stepsize;
-}
-*/
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::WeightDependentUpdatescalingRule(
-		const AurynDouble (WeightDependentUpdatescalingRule::*pFunction_Causal)(const AurynWeight *)const,
-		const AurynDouble (WeightDependentUpdatescalingRule::*pFunction_Anticausal)(const AurynWeight *)const,
-		AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize)
-		: A_plus(A_plus), A_minus(A_minus),update_stepsize(update_stepsize), scaleCausal(pFunction_Causal), scaleAnticausal(pFunction_Anticausal)
+
+
+
+
+
+
+
+
+
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule::WeightDependentUpdatescalingRule(AurynFloat A_plus, AurynFloat A_minus,
+																						   AurynFloat update_stepsize, string scaling_rule_name)
+		: ruleName(scaling_rule_name),A_plus(A_plus), A_minus(A_minus),update_stepsize(update_stepsize)
 {
 	scaleconstant_Causal     = A_plus  * update_stepsize;
 	scaleconstant_Anticausal = A_minus * update_stepsize;
 }
 
-
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule *
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeAdditiveUpdates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize)
+const string STDPwdGrowthConnection::WeightDependentUpdatescalingRule::get_name()const
 {
-	// Choose the function pointers so that we don't need to branch during the simulation,
-	// and create the weight dependence encapsulation object:
-	WeightDependentUpdatescalingRule* pWDUS = new WeightDependentUpdatescalingRule(
-			&WeightDependentUpdatescalingRule::scaleCausal_Constant,
-			&WeightDependentUpdatescalingRule::scaleAnticausal_Constant,
-			A_plus, A_minus, update_stepsize);
-
-	// assign any special parameters:
-	// (nothing to do here)
-
-	// compute any fudge factors:
-	// (nothing to do here)
-
-	pWDUS->factory_used = Additive;
-	return pWDUS;
-}
-
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule *
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeLinearUpdates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
-																			 AurynFloat theAttractorStrengthIndicator,
-																			 AurynWeight theAttractorLocationIndicator, AurynFloat theMeanSlope)
-{
-	// Choose the function pointers so that we don't need to branch during the simulation,
-	// and create the weight dependence encapsulation object:
-	WeightDependentUpdatescalingRule* pWDUS = new WeightDependentUpdatescalingRule(
-			&WeightDependentUpdatescalingRule::scaleCausal_Linear,
-			&WeightDependentUpdatescalingRule::scaleAnticausal_Linear,
-			A_plus, A_minus, update_stepsize);
-
-	// assign any special parameters:
-	//pWDUS->attractorStrengthIndicator = theAttractorStrengthIndicator;
-	//pWDUS->attractorLocationIndicator = theAttractorLocationIndicator;
-
-	// compute any fudge factors:
-	pWDUS->slope_Causal     = theMeanSlope-theAttractorStrengthIndicator;
-	pWDUS->slope_Anticausal = theMeanSlope+theAttractorStrengthIndicator;
-	pWDUS->offset_Causal     = 0.5f - pWDUS->slope_Causal     * theAttractorLocationIndicator;
-	pWDUS->offset_Anticausal = 0.5f - pWDUS->slope_Anticausal * theAttractorLocationIndicator;
-
-	pWDUS->factory_used = Linear;
-	return pWDUS;
-}
-
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule *
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeGuetig2003Updates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
-																				 AurynFloat mu)
-{
-	// Choose the function pointers so that we don't need to branch during the simulation,
-	// and create the weight dependence encapsulation object:
-	WeightDependentUpdatescalingRule* pWDUS = new WeightDependentUpdatescalingRule(
-			&WeightDependentUpdatescalingRule::scaleCausal_Guetig2003,
-			&WeightDependentUpdatescalingRule::scaleAnticausal_Guetig2003,
-			A_plus, A_minus, update_stepsize);
-
-	// assign any special parameters:
-	pWDUS->mu_1 = mu;
-	pWDUS->mu_2 = mu;
-
-	// compute any fudge factors:
-	// (nothing to do here)
-
-	pWDUS->factory_used = Guetig2003;
-	return pWDUS;
-}
-
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule *
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeMorrison2007Updates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
-																				   AurynFloat mu_LTP, AurynFloat mu_LTD)
-{
-	// Choose the function pointers so that we don't need to branch during the simulation,
-	// and create the weight dependence encapsulation object:
-	WeightDependentUpdatescalingRule* pWDUS = new WeightDependentUpdatescalingRule(
-			&WeightDependentUpdatescalingRule::scaleCausal_Morrison2007,
-			&WeightDependentUpdatescalingRule::scaleAnticausal_Morrison2007,
-			A_plus, A_minus, update_stepsize);
-
-	// assign any special parameters:
-	pWDUS->mu_1 = mu_LTP;
-	pWDUS->mu_2 = mu_LTD;
-
-	// compute any fudge factors:
-	// (nothing to do here)
-
-	pWDUS->factory_used = Morrison2007;
-	return pWDUS;
-}
-
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule *
-STDPwdGrowthConnection::WeightDependentUpdatescalingRule::makeGilson2011Updates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
-																				 AurynFloat mu_LTP, AurynFloat mu_LTD)
-{
-	WeightDependentUpdatescalingRule* pWDUS = new WeightDependentUpdatescalingRule(
-			&WeightDependentUpdatescalingRule::scaleCausal_Gilson2011,
-			&WeightDependentUpdatescalingRule::scaleAnticausal_Gilson2011,
-			A_plus, A_minus, update_stepsize);
-
-	// assign any special parameters:
-	pWDUS->mu_1 = mu_LTP;
-	pWDUS->mu_2 = mu_LTD;
-	//TODO: actually implement this according to the paper!
-
-	// compute any fudge factors:
-	// (...)
-
-	pWDUS->factory_used = Gilson2011;
-	return pWDUS;
-}
-
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::dothescale_Causal(const AurynWeight* pWeight)const
-{
-	return (this->*scaleCausal)(pWeight);
-}
-const AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::dothescale_Anticausal(const AurynWeight* pWeight)const
-{
-	return (this->*scaleAnticausal)(pWeight);
-}
-
-void STDPwdGrowthConnection::WeightDependentUpdatescalingRule::setMaxWeight(AurynWeight maxweight)
-{
-	this->compute_fudge(maxweight);
-}
-
-const string STDPwdGrowthConnection::WeightDependentUpdatescalingRule::getRuleName()const
-{
-	switch (factory_used)
-	{
-		case Additive:
-			return "Additive";
-		case Linear:
-			return "Linear";
-		case Guetig2003:
-			return "Guetig2003";
-		case Morrison2007:
-			return "Morrison2007";
-		case Gilson2011:
-			return "Gilson2011";
-		default:
-			throw std::logic_error("This should never happen! Implementation bug?");
-	}
-}
-
-void STDPwdGrowthConnection::WeightDependentUpdatescalingRule::compute_fudge(AurynWeight maxweight)
-{
-	switch (factory_used)
-	{
-		case Additive:
-			// do nothing here.
-			break;
-		case Linear:
-			// TODO: adjust the fudge factors accordingly!
-			break;
-		case Guetig2003:
-			// TODO: Adjust internal max_weight or some fudge.
-			break;
-		case Morrison2007:
-			// TODO: maybe re-scale mu? Or do nothing here?
-			break;
-		case Gilson2011:
-			// TODO implement this.
-			break;
-		default:
-			throw std::logic_error("This should never happen! Implementation bug?");
-	}
+	return ruleName;
 }
 
 void STDPwdGrowthConnection::WeightDependentUpdatescalingRule::setConnection(STDPwdGrowthConnection* pConnection)
 {
 	parentConnection = pConnection;
+}
 
-	// ensure that the vector has the correct size (this will likely be constant-runtime in all but the very first call, as no more resizing will be necessary)
-	//NeuronID N_post = parentConnection->dst->get_size();
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::AdditiveUpdates::dothescale_Causal(AurynWeight* pWeight)
+{
+	return scaleconstant_Causal;
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::LinearUpdates::dothescale_Causal(AurynWeight* pWeight)
+{
+	return scaleconstant_Causal * (slope_Causal * (*pWeight) + offset_Causal);
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Guetig2003Updates::dothescale_Causal(AurynWeight* pWeight)
+{
+	return scaleconstant_Causal * std::pow(1-*pWeight,mu);
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Morrison2007Updates::dothescale_Causal(AurynWeight* pWeight)
+{
+	return scaleconstant_Causal * std::pow(*pWeight,mu_1);
+}
+
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::AdditiveUpdates::dothescale_Anticausal(AurynWeight* pWeight)
+{
+	return scaleconstant_Anticausal;
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::LinearUpdates::dothescale_Anticausal(AurynWeight* pWeight)
+{
+	return scaleconstant_Anticausal * (slope_Anticausal * (*pWeight) + offset_Anticausal);
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Guetig2003Updates::dothescale_Anticausal(AurynWeight* pWeight)
+{
+	return scaleconstant_Anticausal * std::pow(*pWeight,mu);
+}
+AurynDouble STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Morrison2007Updates::dothescale_Anticausal(AurynWeight* pWeight)
+{
+	return scaleconstant_Anticausal * std::pow(*pWeight,mu_2);
 }
 
 
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule::AdditiveUpdates::AdditiveUpdates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize)
+		: WeightDependentUpdatescalingRule(A_plus,A_minus,update_stepsize,"Additive")
+{
+	// no fudge to compute here for additive STDP rules.
+}
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule::LinearUpdates::LinearUpdates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
+		AurynFloat theAttractorStrengthIndicator, AurynWeight theAttractorLocationIndicator, AurynFloat theMeanSlope)
+		: WeightDependentUpdatescalingRule(A_plus,A_minus,update_stepsize,"Linear")
+{
+	slope_Causal     = theMeanSlope-theAttractorStrengthIndicator;
+	slope_Anticausal = theMeanSlope+theAttractorStrengthIndicator;
+	offset_Causal     = 0.5f - slope_Causal     * theAttractorLocationIndicator;
+	offset_Anticausal = 0.5f - slope_Anticausal * theAttractorLocationIndicator;
+
+}
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Guetig2003Updates::Guetig2003Updates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
+	   AurynFloat mu)
+		: WeightDependentUpdatescalingRule(A_plus,A_minus,update_stepsize,"Guetig2003"),
+		  mu(mu)
+{
+	// no fudge to compute here for Guetig2003 STDP rules.
+}
+STDPwdGrowthConnection::WeightDependentUpdatescalingRule::Morrison2007Updates::Morrison2007Updates(AurynFloat A_plus, AurynFloat A_minus, AurynFloat update_stepsize,
+	   AurynFloat mu_LTP, AurynFloat mu_LTD)
+		: WeightDependentUpdatescalingRule(A_plus,A_minus,update_stepsize,"Morrison2007"),
+		  mu_1(mu_LTP),mu_2(mu_LTD)
+{
+	// no fudge to compute here for Morrison2007 STDP rules.
+}
 
 
-
-
-
-
-
-
-STDPwdGrowthConnection::WeightDependentGrowthRule* STDPwdGrowthConnection::WeightDependentGrowthRule::rule_factory(string growth_type, AurynFloat stride, bool scaleByWeight, string trainedness_measure_string)
+STDPwdGrowthConnection::WeightDependentGrowthRule*
+STDPwdGrowthConnection::WeightDependentGrowthRule::rule_factory(string growth_type, AurynFloat stride, bool scaleByWeight, string trainedness_measure_string)
 {
 	// options: None, ConstantGrowth, RandomGrowth, RandomJitter, RandomShrinkage, ConstantShrinkage
 	if (growth_type == "None")
@@ -476,6 +310,7 @@ STDPwdGrowthConnection::WeightDependentGrowthRule* STDPwdGrowthConnection::Weigh
 		else
 			throw std::invalid_argument( "Unknown type of growth rule requested. Typo?" );
 
+		the_growth_rule->growthrule_name = growth_type;
 		the_growth_rule->strideScale = stride;
 		the_growth_rule->scaleGrowthStepsByWeight = scaleByWeight;
 
@@ -590,6 +425,11 @@ void STDPwdGrowthConnection::WeightDependentGrowthRule::growWeights()
 			}
 		}
 	}
+}
+
+const string& STDPwdGrowthConnection::WeightDependentGrowthRule::getGrowthrule_name() const
+{
+	return growthrule_name;
 }
 
 
