@@ -26,7 +26,7 @@ using namespace std;
 using namespace auryn;
 
 namespace po = boost::program_options;
-namespace mpi = boost::mpi;
+//namespace mpi = boost::mpi;
 
 //void defineDefaultParameters(boost::property_tree::ptree const& pt);
 //void print(boost::property_tree::ptree const& pt, string indent );
@@ -763,6 +763,7 @@ void setupHistoryTracking(SpikingGroup *poisson, NeuronGroup *detector_neuron, D
 		setupReducedHistoryTracking(poisson, detector_neuron, con1, simparams);
 }
 
+/*
 void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::property_tree::ptree& simparams)
 {
 	mpicommunicator = &world;
@@ -787,6 +788,7 @@ void defineGlobals(mpi::communicator world, mpi::environment& env, const boost::
 	}
 	sys = new System(&world);
 }
+*/
 
 int main(int ac, char* av[])
 {
@@ -835,9 +837,6 @@ int main(int ac, char* av[])
 	sys->run(simparams.get<float>("general.simtime"));
 	// END running the simulation.
 
-
-	if (errcode)
-		mpienv->abort(errcode);
 	logger->msg("Freeing ...",PROGRESS,true);
 	auryn_free();
 	return errcode;
