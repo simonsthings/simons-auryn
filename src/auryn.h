@@ -72,7 +72,6 @@
 #include "auryn/TripletScalingConnection.h"
 #include "auryn/IdentityConnection.h"
 #include "auryn/AllToAllConnection.h"
-#include "WDHomeostaticSTDPConnection.h"
 #include "STDPwdGrowthConnection.h"
 
 // rule class definitions
