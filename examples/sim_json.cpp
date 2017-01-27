@@ -356,52 +356,6 @@ NeuronGroup* setupPostsynapticGroup(const boost::property_tree::ptree& simparams
 }
 
 
-STDPWeightDependence* setupOldWeightDependence(const boost::property_tree::ptree& simparams, string connectionIDstring)
-{
-	const string &type = simparams.get<string>("connectionsets."+connectionIDstring+".stdprule.weightdependence.type");
-
-	AurynFloat maxweight = simparams.get<float>("connectionsets."+connectionIDstring+".maximumweight"); //1.0f;
-	AurynFloat learningrate = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.learningrate"); //0.01;  // learningrate (?)
-	AurynFloat A_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_plus");
-	AurynFloat A_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.A_minus");
-
-	AurynFloat scaleconstant_plus = learningrate * A_plus;
-	AurynFloat scaleconstant_minus = learningrate * A_minus;
-
-	cout << "The requested weight dependence is: " << type << endl;
-
-	if (type == "AdditiveWeightDependence")
-	{
-		AdditiveWeightDependence* wd = new AdditiveWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus);
-		return wd;
-	}
-	else if (type == "LinearAttractorWeightDependence")
-	{
-		AurynFloat attractorStrengthIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorStrengthIndicator");
-		AurynFloat attractorLocationIndicator = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.attractorLocationIndicator");
-		LinearAttractorWeightDependence* wd = new LinearAttractorWeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, attractorStrengthIndicator, attractorLocationIndicator);
-		return wd;
-	}
-	else if (type == "Guetig2003WeightDependence")
-	{
-		AurynFloat mu = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu");
-		Guetig2003WeightDependence* wd = new Guetig2003WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu);
-		return wd;
-	}
-	else if (type == "Morrison2007WeightDependence")
-	{
-		AurynFloat mu_plus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_plus");
-		AurynFloat mu_minus = simparams.get<float>("connectionsets."+connectionIDstring+".stdprule.weightdependence.mu_minus");
-		Morrison2007WeightDependence* wd = new Morrison2007WeightDependence(maxweight, scaleconstant_plus, scaleconstant_minus, mu_plus, mu_minus);
-		return wd;
-	}
-	else
-	{
-		throw std::invalid_argument( "Unknown type of Weight Dependence class. (maybe change implementation anyway?)" );
-	}
-
-}
-
 WDHomeostaticSTDPConnection::WeightDependentUpdateScaling*
 setupWeightDependence_for_WDHomeostaticSTDPConnection(const boost::property_tree::ptree& simparams, string connectionIDstring)
 {
@@ -534,15 +488,6 @@ DuplexConnection* setupConnection(SpikingGroup* presynaptic_group, NeuronGroup* 
 			//theConn->set_alphalambda_alternative(A_plus,A_minus,learningrate);
 			theConn->set_mu_plus(1.0);
 			theConn->set_mu_minus(1.0);
-			return theConn;
-		}
-		else if (connectiontype == "GeneralAlltoallSTDPConnection")
-		{
-			STDPWeightDependence* theWeightDependence = setupOldWeightDependence(simparams, connectionIDstring);
-			GeneralAlltoallSTDPConnection* theConn = new GeneralAlltoallSTDPConnection(presynaptic_group, postsynaptic_group, initialweight, maxweight, theWeightDependence);
-			theConn->setTau_pre(tau_pre);
-			theConn->setTau_post(tau_post);
-			theConn->set_max_weight(maxweight);
 			return theConn;
 		}
 		else if (connectiontype == "WDHomeostaticSTDPConnection")

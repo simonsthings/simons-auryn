@@ -13,12 +13,6 @@
 #include "auryn/SpikeDelay.h"
 
 
-#include "AdditiveWeightDependence.h"
-#include "LinearAttractorWeightDependence.h"
-#include "Guetig2003WeightDependence.h"
-#include "Morrison2007WeightDependence.h"
-
-
 namespace auryn {
 
 

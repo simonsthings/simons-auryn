@@ -72,13 +72,10 @@
 #include "auryn/TripletScalingConnection.h"
 #include "auryn/IdentityConnection.h"
 #include "auryn/AllToAllConnection.h"
-#include "GeneralAlltoallSTDPConnection.h"
 #include "WDHomeostaticSTDPConnection.h"
 #include "STDPwdGrowthConnection.h"
 
 // rule class definitions
-#include "STDPWeightDependence.h"
-#include "HomeostasisRule.h"
 
 
 // Spiking and input group definitions
